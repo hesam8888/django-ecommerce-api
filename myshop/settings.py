@@ -24,14 +24,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-^v*!9s+@i%_0bp^%f00ak=&e04cdkbs1z@v-_ugelq8=!3r$4&')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = 'RENDER' not in os.environ
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
 ALLOWED_HOSTS = [
     'shopterest.ir',
     'www.shopterest.ir',
     '.onrender.com',
+    '.railway.app',
     '127.0.0.1',
     'localhost',
+    '*',  # Allow all hosts for Railway deployment
 ]
 
 # Application definition
@@ -98,8 +100,8 @@ TEMPLATES = [
 WSGI_APPLICATION = 'myshop.wsgi.application'
 
 # Database
-if 'RENDER' in os.environ:
-    # Render PostgreSQL database
+if 'DATABASE_URL' in os.environ:
+    # Production database (Render, Railway, etc.)
     DATABASES = {
         'default': dj_database_url.config(
             default=os.environ.get('DATABASE_URL'),

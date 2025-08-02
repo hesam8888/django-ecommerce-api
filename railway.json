@@ -4,7 +4,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "python manage.py migrate && gunicorn --bind 0.0.0.0:$PORT --workers 2 myshop.wsgi:application",
+    "startCommand": "gunicorn --bind 0.0.0.0:$PORT --workers 2 myshop.wsgi:application",
     "healthcheckPath": "/health/",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
