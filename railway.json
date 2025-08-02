@@ -4,7 +4,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "gunicorn --bind 0.0.0.0:$PORT --workers 2 myshop.wsgi:application",
+    "startCommand": "python test_minimal.py && gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 120 myshop.wsgi:application",
     "healthcheckPath": "/health/",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",

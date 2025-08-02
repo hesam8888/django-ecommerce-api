@@ -20,16 +20,23 @@ import ssl
 import certifi
 import base64
 
-User = get_user_model()
-
 @never_cache
 def health_check(request):
     """Simple health check endpoint for Railway deployment."""
-    return JsonResponse({
-        'status': 'healthy',
-        'message': 'Django e-commerce API is running',
-        'timestamp': datetime.now().isoformat()
-    })
+    try:
+        return JsonResponse({
+            'status': 'healthy',
+            'message': 'Django e-commerce API is running',
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e),
+            'timestamp': datetime.now().isoformat()
+        }, status=500)
+
+User = get_user_model()
 
 GOOGLE_CLIENT_IDS = [
     '198960327448-p1d5feprlio39dk1rrac0ueju78qu4c4.apps.googleusercontent.com',  # iOS
