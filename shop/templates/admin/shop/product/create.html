@@ -1,0 +1,479 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
+    <link rel="stylesheet" href="{% static 'shop/css/image_editor.css' %}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+    <script src="{% static 'shop/js/image_editor.js' %}"></script>
+    <style>
+        .image-preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .preview-item {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .image-upload-container {
+            border: 2px dashed #ddd;
+            padding: 20px;
+            text-align: center;
+            border-radius: 4px;
+            margin-top: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .image-upload-container:hover {
+            border-color: #999;
+            background-color: #f8f9fa;
+        }
+        .image-upload-container i {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        #imageInput {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .highlight {
+            border-color: #007bff !important;
+            background-color: rgba(0, 123, 255, 0.1);
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .alert {
+            margin-top: 0.5rem;
+        }
+        
+        /* Cropper Modal Styles */
+        .crop-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .crop-modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow: auto;
+        }
+        .crop-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .crop-modal-header h3 {
+            margin: 0;
+        }
+        .crop-modal-body {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .crop-modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .crop-modal img {
+            max-width: 100%;
+            max-height: 300px;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .crop-modal-content {
+                width: 95%;
+                padding: 15px;
+            }
+            .crop-modal img {
+                max-height: 250px;
+            }
+        }
+        
+        .crop-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .crop-btn:hover {
+            background: #218838;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .crop-btn i {
+            font-size: 18px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>ایجاد محصول جدید</h1>
+    
+    <form method="post" enctype="multipart/form-data" id="product-form" action="">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="id_name">نام محصول</label>
+            <input type="text" name="name" id="id_name" class="form-control" required>
+            {% if form.name.errors %}
+                <div class="alert alert-danger">{{ form.name.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="id_description">توضیحات</label>
+            <textarea name="description" id="id_description" class="form-control" required></textarea>
+            {% if form.description.errors %}
+                <div class="alert alert-danger">{{ form.description.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="id_category">دسته‌بندی</label>
+            <select name="category" id="id_category" class="form-control" required>
+                <option value="">انتخاب کنید</option>
+                {% for category in categories %}
+                    <option value="{{ category.id }}">{{ category.name }}</option>
+                {% endfor %}
+            </select>
+            {% if form.category.errors %}
+                <div class="alert alert-danger">{{ form.category.errors }}</div>
+            {% endif %}
+        </div>
+
+        {# Render dynamic attribute fields #}
+        {% for field in form.visible_fields %}
+            {% if field.name.startswith 'attr_' %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <div class="alert alert-danger">{{ field.errors }}</div>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% endfor %}
+        
+        <div class="form-group">
+            <label for="id_price_toman">قیمت (تومان)</label>
+            <input type="number" name="price_toman" id="id_price_toman" class="form-control" required min="0">
+            {% if form.price_toman.errors %}
+                <div class="alert alert-danger">{{ form.price_toman.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="id_price_usd">قیمت (دلار)</label>
+            <input type="number" name="price_usd" id="id_price_usd" class="form-control" step="0.01" min="0">
+            {% if form.price_usd.errors %}
+                <div class="alert alert-danger">{{ form.price_usd.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="id_stock_quantity">تعداد موجودی</label>
+            <input type="number" name="stock_quantity" id="id_stock_quantity" class="form-control" required min="0">
+            {% if form.stock_quantity.errors %}
+                <div class="alert alert-danger">{{ form.stock_quantity.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="id_model">مدل</label>
+            <input type="text" name="model" id="id_model" class="form-control">
+            {% if form.model.errors %}
+                <div class="alert alert-danger">{{ form.model.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="id_sku">کد محصول</label>
+            <input type="text" name="sku" id="id_sku" class="form-control">
+            {% if form.sku.errors %}
+                <div class="alert alert-danger">{{ form.sku.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="id_weight">وزن (گرم)</label>
+            <input type="number" name="weight" id="id_weight" class="form-control" step="0.01" min="0">
+            {% if form.weight.errors %}
+                <div class="alert alert-danger">{{ form.weight.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="id_dimensions">ابعاد (سانتیمتر)</label>
+            <input type="text" name="dimensions" id="id_dimensions" class="form-control">
+            {% if form.dimensions.errors %}
+                <div class="alert alert-danger">{{ form.dimensions.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="id_warranty">گارانتی</label>
+            <input type="text" name="warranty" id="id_warranty" class="form-control">
+            {% if form.warranty.errors %}
+                <div class="alert alert-danger">{{ form.warranty.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div id="attributes-container"></div>
+        
+        <div class="form-group">
+            <label for="id_images">تصاویر محصول</label>
+            <div class="image-upload-container" id="dropZone">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>برای آپلود تصاویر اینجا کلیک کنید یا تصاویر را بکشید و رها کنید</p>
+                <input type="file" name="images" id="imageInput" multiple accept="image/*">
+            </div>
+            <div id="imagePreviews" class="image-preview-container"></div>
+            {% if form.images.errors %}
+                <div class="alert alert-danger">{{ form.images.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <button type="submit" class="btn btn-primary">ذخیره</button>
+    </form>
+</div>
+
+<!-- Image Cropper Modal -->
+<div id="imageCropperModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>ویرایش تصویر</h2>
+        </div>
+        <div class="modal-body">
+            <div class="cropper-container">
+                <img id="cropperImage" src="" alt="Image to crop">
+            </div>
+            <div class="cropper-controls">
+                <button type="button" id="rotateLeftBtn" class="btn btn-secondary">
+                    <i class="fas fa-undo"></i> چرخش به چپ
+                </button>
+                <button type="button" id="rotateRightBtn" class="btn btn-secondary">
+                    <i class="fas fa-redo"></i> چرخش به راست
+                </button>
+                <button type="button" id="applyCropBtn" class="btn btn-primary">
+                    <i class="fas fa-check"></i> اعمال تغییرات
+                </button>
+                <button type="button" id="cancelCropBtn" class="btn btn-danger">
+                    <i class="fas fa-times"></i> انصراف
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add this before the closing body tag -->
+<div id="cropModal" class="crop-modal">
+    <div class="crop-modal-content">
+        <div class="crop-modal-header">
+            <h3>برش تصویر</h3>
+            <button class="close-modal" onclick="closeCropModal()">×</button>
+        </div>
+        <div class="crop-modal-body">
+            <img id="cropImage" src="" alt="Image to crop">
+        </div>
+        <div class="crop-modal-footer">
+            <button onclick="closeCropModal()" class="btn btn-secondary">انصراف</button>
+            <button onclick="applyCrop()" class="btn btn-primary">اعمال</button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const imageInput = document.getElementById('imageInput');
+    const previewContainer = document.getElementById('imagePreviews');
+    const dropZone = document.getElementById('dropZone');
+    let currentCropImage = null;
+    let cropper = null;
+
+    // Handle file selection
+    imageInput.addEventListener('change', function(e) {
+        const files = e.target.files;
+        if (files && files.length > 0) {
+            handleFiles(files);
+        }
+    });
+
+    // Handle drag and drop
+    dropZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        dropZone.classList.add('highlight');
+    });
+
+    dropZone.addEventListener('dragleave', function() {
+        dropZone.classList.remove('highlight');
+    });
+
+    dropZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dropZone.classList.remove('highlight');
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+            handleFiles(files);
+        }
+    });
+
+    // Handle files
+    function handleFiles(files) {
+        Array.from(files).forEach(file => {
+            if (!file.type.startsWith('image/')) return;
+
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                // Create preview wrapper
+                const wrapper = document.createElement('div');
+                wrapper.className = 'preview-item';
+                
+                // Create image
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.alt = file.name;
+                
+                // Create crop button
+                const cropBtn = document.createElement('button');
+                cropBtn.className = 'crop-btn';
+                cropBtn.innerHTML = '<i class="fas fa-crop"></i> برش';
+                
+                // Add click handler
+                cropBtn.onclick = function() {
+                    openCropModal(img);
+                };
+                
+                // Assemble and add to container
+                wrapper.appendChild(img);
+                wrapper.appendChild(cropBtn);
+                previewContainer.appendChild(wrapper);
+            };
+            
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // Open crop modal
+    window.openCropModal = function(imgElement) {
+        currentCropImage = imgElement;
+        const modal = document.getElementById('cropModal');
+        const cropImage = document.getElementById('cropImage');
+        
+        cropImage.src = imgElement.src;
+        modal.style.display = 'flex';
+        
+        // Initialize cropper after image is loaded
+        cropImage.onload = function() {
+            if (cropper) {
+                cropper.destroy();
+            }
+            
+            cropper = new Cropper(cropImage, {
+                aspectRatio: 4/5, // 4:5 portrait aspect ratio
+                viewMode: 2, // Restrict crop box to not exceed the size of the canvas
+                autoCropArea: 0.8,
+                responsive: true,
+                restore: false,
+                guides: true,
+                center: true,
+                highlight: true,
+                cropBoxMovable: true,
+                cropBoxResizable: true,
+                minContainerWidth: 300,
+                minContainerHeight: 375, // Adjusted for 4:5 ratio (300 * 5/4)
+                maxContainerWidth: 300,
+                maxContainerHeight: 375, // Adjusted for 4:5 ratio (300 * 5/4)
+                ready: function() {
+                    // Center the crop box and enforce 4:5 aspect ratio
+                    const canvasData = cropper.getCanvasData();
+                    const cropBoxWidth = Math.min(canvasData.width * 0.8, 300);
+                    const cropBoxHeight = cropBoxWidth * (5/4); // 4:5 ratio
+                    
+                    cropper.setCropBoxData({
+                        left: canvasData.left + (canvasData.width - cropBoxWidth) / 2,
+                        top: canvasData.top + (canvasData.height - cropBoxHeight) / 2,
+                        width: cropBoxWidth,
+                        height: cropBoxHeight
+                    });
+                }
+            });
+        };
+    };
+
+    // Close crop modal
+    window.closeCropModal = function() {
+        const modal = document.getElementById('cropModal');
+        modal.style.display = 'none';
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+        currentCropImage = null;
+    };
+
+    // Apply crop
+    window.applyCrop = function() {
+        if (!cropper || !currentCropImage) return;
+        
+        const canvas = cropper.getCroppedCanvas({
+            width: 800, // Fixed width for 4:5 aspect ratio
+            height: 1000 // Fixed height for 4:5 aspect ratio (800 * 5/4)
+        });
+        
+        if (canvas) {
+            currentCropImage.src = canvas.toDataURL();
+        }
+        
+        closeCropModal();
+    };
+});
+</script>
+{% endblock %}

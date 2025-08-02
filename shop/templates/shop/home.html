@@ -1,0 +1,165 @@
+{% extends 'shop/base.html' %}
+{% load static %}
+
+{% block title %}Home - Watch Store{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hero-section {
+        background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('{% static "images/hero-bg.jpg" %}');
+        background-size: cover;
+        background-position: center;
+        color: white;
+        padding: 100px 0;
+        text-align: center;
+        margin-bottom: 50px;
+    }
+    .featured-section {
+        padding: 50px 0;
+    }
+    .section-title {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+    .product-card {
+        transition: transform 0.3s ease;
+        height: 100%;
+        margin-bottom: 30px;
+    }
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .product-image {
+        height: 200px;
+        object-fit: cover;
+    }
+    .price {
+        font-size: 1.25rem;
+        font-weight: bold;
+        color: #28a745;
+    }
+    .category-card {
+        text-align: center;
+        padding: 20px;
+        border-radius: 10px;
+        background: #f8f9fa;
+        transition: all 0.3s ease;
+    }
+    .category-card:hover {
+        background: #e9ecef;
+        transform: translateY(-5px);
+    }
+    .latest-section {
+        background: #f8f9fa;
+        padding: 50px 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <h1 class="display-4">Welcome to Our Watch Store</h1>
+        <p class="lead">Discover our collection of premium timepieces</p>
+        <a href="#featured" class="btn btn-primary btn-lg">Shop Now</a>
+    </div>
+</section>
+
+<!-- Featured Products Section -->
+<section id="featured" class="featured-section">
+    <div class="container">
+        <h2 class="section-title">Featured Products</h2>
+        <div class="row">
+            {% for product in featured_products %}
+            <div class="col-md-3">
+                <div class="card product-card">
+                    {% with first_image=product.images.first %}
+                    {% if first_image %}
+                    <img src="{{ first_image.image.url }}" class="card-img-top product-image" alt="{{ product.name }}">
+                    {% else %}
+                    <img src="{% static 'images/no-image.jpg' %}" class="card-img-top product-image" alt="No image available">
+                    {% endif %}
+                    {% endwith %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ product.name }}</h5>
+                        <p class="price">${{ product.price }}</p>
+                        <div class="d-grid gap-2">
+                            <a href="#" class="btn btn-primary">View Details</a>
+                            <button class="btn btn-outline-primary">Add to Cart</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    No featured products available at the moment.
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Categories Section -->
+<section class="featured-section">
+    <div class="container">
+        <h2 class="section-title">Shop by Category</h2>
+        <div class="row">
+            {% for category in categories %}
+            <div class="col-md-4">
+                <div class="category-card">
+                    <h3>{{ category.name }}</h3>
+                    <p>{{ category.description|truncatewords:20 }}</p>
+                    <a href="#" class="btn btn-outline-primary">Browse Category</a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    No categories available at the moment.
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Latest Products Section -->
+<section class="latest-section">
+    <div class="container">
+        <h2 class="section-title">Latest Arrivals</h2>
+        <div class="row">
+            {% for product in latest_products %}
+            <div class="col-md-3">
+                <div class="card product-card">
+                    {% with first_image=product.images.first %}
+                    {% if first_image %}
+                    <img src="{{ first_image.image.url }}" class="card-img-top product-image" alt="{{ product.name }}">
+                    {% else %}
+                    <img src="{% static 'images/no-image.jpg' %}" class="card-img-top product-image" alt="No image available">
+                    {% endif %}
+                    {% endwith %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ product.name }}</h5>
+                        <p class="price">${{ product.price }}</p>
+                        <div class="d-grid gap-2">
+                            <a href="#" class="btn btn-primary">View Details</a>
+                            <button class="btn btn-outline-primary">Add to Cart</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    No latest products available at the moment.
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %} 

@@ -1,0 +1,388 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    /* Remove any existing sidebar styles */
+    .product-detail-sidebar {
+        display: none !important;
+    }
+
+    /* Modal styles */
+    .product-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .product-modal.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 800px;
+        max-height: 90vh;
+        overflow-y: auto;
+        position: relative;
+        margin: auto;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .modal-header h2 {
+        margin: 0;
+        color: #333;
+        font-size: 1.5rem;
+    }
+
+    .close-modal {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #666;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .modal-body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .product-image {
+        width: 100%;
+        height: 300px;
+        object-fit: cover;
+        border-radius: 4px;
+    }
+
+    .product-info {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .info-section {
+        margin-bottom: 15px;
+    }
+
+    .info-section h3 {
+        margin: 0 0 10px 0;
+        color: #333;
+        font-size: 16px;
+    }
+
+    .info-section p {
+        margin: 5px 0;
+        color: #666;
+    }
+
+    .modal-footer {
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px solid #eee;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .modal-btn {
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        border: none;
+        font-size: 14px;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .edit-btn {
+        background-color: #6c5ce7;
+        color: white;
+    }
+
+    .close-btn {
+        background-color: #f1f1f1;
+        color: #333;
+    }
+
+    /* Make table rows clickable */
+    tr[class^="row"] td {
+        cursor: pointer;
+    }
+
+    /* Hide Quick Edit and edit buttons */
+    .quick-edit-btn,
+    .quick-edit-link,
+    a[href*="quick-edit"],
+    a[href*="quick_edit"],
+    .field-quick_edit,
+    .field-quick-edit,
+    td.field-quick_edit,
+    th.field-quick_edit,
+    .quick-edit,
+    [class*="quick-edit"],
+    [class*="quick_edit"],
+    [data-quick-edit],
+    [data-quick_edit],
+    .field-image a[href*="edit"],
+    .field-image a[href*="change"],
+    .field-image a[href*="quick"],
+    .field-image a[href*="edit"]:hover,
+    .field-image a[href*="change"]:hover,
+    .field-image a[href*="quick"]:hover {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+        opacity: 0 !important;
+        position: absolute !important;
+        pointer-events: none !important;
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        clip: rect(0, 0, 0, 0) !important;
+    }
+
+    /* Remove hover effects that might show edit buttons */
+    .field-image:hover::after,
+    .field-image:hover::before {
+        display: none !important;
+    }
+
+    /* Ensure images are not clickable */
+    .field-image img {
+        pointer-events: none !important;
+    }
+
+    /* Responsive styles */
+    @media (max-width: 768px) {
+        .modal-body {
+            grid-template-columns: 1fr;
+        }
+        
+        .modal-content {
+            width: 95%;
+            margin: 10px;
+        }
+    }
+
+    .similar-products-section {
+        margin-top: 20px;
+        padding: 20px;
+        border-top: 1px solid #eee;
+    }
+    
+    .similar-products-section h3 {
+        margin: 0 0 15px 0;
+        color: #333;
+        font-size: 18px;
+    }
+    
+    .similar-products-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 20px;
+        margin-top: 15px;
+    }
+    
+    .similar-product-card {
+        border: 1px solid #eee;
+        border-radius: 8px;
+        padding: 10px;
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+    }
+    
+    .similar-product-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .similar-product-image {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 4px;
+        margin-bottom: 10px;
+    }
+    
+    .similar-product-name {
+        font-weight: 500;
+        margin: 5px 0;
+        color: #333;
+    }
+    
+    .similar-product-price {
+        color: #666;
+        font-size: 14px;
+    }
+
+    .product-image-container {
+        position: relative;
+        margin-bottom: 20px;
+    }
+    
+    .thumbnail-gallery {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+        overflow-x: auto;
+        padding: 5px 0;
+    }
+    
+    .thumbnail {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 4px;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: border-color 0.2s;
+    }
+    
+    .thumbnail.active {
+        border-color: #6c5ce7;
+    }
+    
+    .thumbnail:hover {
+        border-color: #a29bfe;
+    }
+</style>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script src="{% static 'shop/js/product_detail_modal.js' %}"></script>
+{% endblock %}
+
+{% block object-tools-items %}
+{{ block.super }}
+{% endblock %}
+
+{% block result_list %}
+<!-- Hint for clickable rows -->
+<div class="clickable-hint">
+  <i class="icon-info-sign"></i> {% trans "Click on any product row to view detailed information." %}
+</div>
+{{ block.super }}
+{% endblock %}
+
+{% block search %}
+<div class="search-container" style="display: flex; gap: 10px; margin-bottom: 10px;">
+    <!-- Regular search box -->
+    <div id="toolbar">
+        <form id="changelist-search" method="get">
+            <div><!-- DIV needed for valid HTML -->
+                <label for="searchbar"><img src="{% static 'admin/img/search.svg' %}" alt="Search"></label>
+                <input type="text" size="40" name="q" value="{{ cl.query }}" id="searchbar" autofocus placeholder="{% translate 'Search by product name or description' %}">
+                <input type="submit" value="{% translate 'Search' %}">
+                {% if show_result_count %}
+                    <span class="small quiet">{% blocktranslate count counter=cl.result_count %}{{ counter }} result{% plural %}{{ counter }} results{% endblocktranslate %} (<a href="?{% if cl.is_popup %}_popup=1{% endif %}">{% if cl.show_full_result_count %}{% blocktranslate with full_result_count=cl.full_result_count %}{{ full_result_count }} total{% endblocktranslate %}{% else %}{% translate "Show all" %}{% endif %}</a>)</span>
+                {% endif %}
+                {% for pair in cl.params.items %}
+                    {% if pair.0 != 'q' and pair.0 != 'e' %}
+                    <input type="hidden" name="{{ pair.0 }}" value="{{ pair.1 }}">
+                    {% endif %}
+                {% endfor %}
+                
+                <!-- Preserve supplier filter when searching -->
+                {% if selected_supplier %}
+                <input type="hidden" name="supplier" value="{{ selected_supplier }}">
+                {% endif %}
+            </div>
+        </form>
+    </div>
+    
+    <!-- Supplier filter form -->
+    <div id="supplier-filter">
+        <form id="supplier-search" method="get" style="display: flex; gap: 5px; align-items: center;">
+            <div><!-- DIV needed for valid HTML -->
+                <label for="supplier-select">{% translate 'Supplier:' %}</label>
+                <select name="supplier" id="supplier-select">
+                    <option value="">-- {% translate 'All Suppliers' %} --</option>
+                    {% for supplier in suppliers %}
+                        <option value="{{ supplier.id }}" {% if selected_supplier == supplier.id|stringformat:"i" %}selected{% endif %}>{{ supplier.name }}</option>
+                    {% endfor %}
+                </select>
+                <input type="submit" value="{% translate 'Filter' %}">
+                
+                <!-- Preserve search query when filtering by supplier -->
+                {% if cl.query %}
+                <input type="hidden" name="q" value="{{ cl.query }}">
+                {% endif %}
+                
+                {% for pair in cl.params.items %}
+                    {% if pair.0 != 'supplier' and pair.0 != 'q' and pair.0 != 'e' %}
+                    <input type="hidden" name="{{ pair.0 }}" value="{{ pair.1 }}">
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+<!-- Product Detail Modal -->
+<div id="productModal" class="product-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalProductTitle"></h2>
+            <button class="close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="product-image-container">
+                <img id="modalProductImage" class="product-image" src="" alt="Product Image">
+                <div id="thumbnailGallery" class="thumbnail-gallery"></div>
+            </div>
+            <div class="product-info">
+                <div class="info-section">
+                    <h3>Basic Information</h3>
+                    <p><strong>Category:</strong> <span id="modalCategory"></span></p>
+                    <p><strong>Supplier:</strong> <span id="modalSupplier"></span></p>
+                    <p><strong>Status:</strong> <span id="modalStatus"></span></p>
+                    <p><strong>Price:</strong> <span id="modalPrice"></span></p>
+                </div>
+                <div class="info-section">
+                    <h3>Description</h3>
+                    <p id="modalDescription"></p>
+                </div>
+                <div class="info-section" id="modalAttributes">
+                    <h3>Attributes</h3>
+                    <div id="attributesList"></div>
+                </div>
+            </div>
+        </div>
+        <div class="similar-products-section">
+            <h3>Similar Products</h3>
+            <div id="similarProductsList" class="similar-products-grid"></div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" id="modalEditButton" class="modal-btn edit-btn">Edit Product</a>
+            <button class="modal-btn close-btn close-modal">Close</button>
+        </div>
+    </div>
+</div> 

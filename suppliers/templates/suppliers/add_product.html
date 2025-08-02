@@ -1,0 +1,2067 @@
+{% load static %}
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% trans "Add Product" %}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://unpkg.com/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="{% static 'shop/js/product_tags.js' %}"></script>
+    <script src="{% static 'shop/js/image_editor.js' %}"></script>
+    
+    <!-- Remove hidden elements and debug output for product_attributes.js -->
+    <!-- Add hidden element for existing attributes data -->
+    <!-- <script id="existing-attrs-data" type="application/json">
+        {{ existing_attrs|safe }}
+    </script> -->
+    
+    <!-- Add hidden element for category attributes data -->
+    <!-- <script id="category-attributes-data" type="application/json">
+        {{ category_attributes|safe }}
+    </script> -->
+    
+    <!-- Debug output -->
+    <!-- <script>
+        console.log('🔍 TEMPLATE DEBUG: category_attributes length:', '{{ category_attributes|safe }}'.length);
+        console.log('🔍 TEMPLATE DEBUG: category_attributes preview:', '{{ category_attributes|safe }}'.substring(0, 200));
+        setTimeout(() => {
+            const element = document.getElementById('category-attributes-data');
+            console.log('🔍 TEMPLATE TEST: category-attributes-data element found:', !!element);
+            if (element) {
+                console.log('🔍 TEMPLATE TEST: Element content length:', element.textContent.length);
+                console.log('🔍 TEMPLATE TEST: Element content preview:', element.textContent.substring(0, 200));
+            }
+        }, 100);
+    </script> -->
+    
+    <!-- Add hidden element for category tags data -->
+    <script id="category-tags-data" type="application/json">
+        {{ category_tags|safe }}
+    </script>
+    
+    <!-- Add hidden element for selected tags data -->
+    <script id="selected-tags-data" type="application/json">
+        {{ selected_tags|safe }}
+    </script>
+    
+    <!-- Add hidden element for product images data -->
+    <script id="product-images-data" type="application/json">
+        {{ product_images|safe }}
+    </script>
+    
+    <!-- Add this simple theme toggle script at the top -->
+    <script>
+        function toggleTheme() {
+            const body = document.body;
+            const themeToggle = document.getElementById('themeToggle');
+            const isLight = body.classList.toggle('light-theme');
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+            themeToggle.querySelector('i').textContent = isLight ? '🌙' : '☀️';
+            return false;
+        }
+
+        function toggleLanguage() {
+            const body = document.body;
+            const languageToggle = document.getElementById('languageToggle');
+            const isRTL = body.getAttribute('dir') === 'rtl';
+            
+            if (isRTL) {
+                body.setAttribute('dir', 'ltr');
+                languageToggle.innerHTML = `
+                    <img src="{% static 'shop/images/fa-flag.png' %}" alt="فارسی" class="fa-flag">
+                    <span>فارسی</span>
+                `;
+            } else {
+                body.setAttribute('dir', 'rtl');
+                languageToggle.innerHTML = `
+                    <img src="{% static 'shop/images/en-flag.png' %}" alt="English" class="en-flag">
+                    <span>English</span>
+                `;
+            }
+            
+            localStorage.setItem('language', isRTL ? 'ltr' : 'rtl');
+            return false;
+        }
+        
+        // Add this new function to format numbers with commas
+        function formatNumberWithCommas(inputField) {
+            // Get input value and remove non-numeric characters except decimal point
+            let value = inputField.value.replace(/[^\d.]/g, '');
+            
+            // Handle decimal part separately if exists
+            let decimalPart = '';
+            if (value.includes('.')) {
+                const parts = value.split('.');
+                value = parts[0];
+                decimalPart = '.' + parts[1];
+            }
+            
+            // Format the whole number part with commas
+            value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            
+            // Combine with decimal part if it exists
+            inputField.value = value + decimalPart;
+        }
+
+        // Add this function to prepare numbers for form submission
+        function prepareNumbersForSubmit() {
+            const priceToman = document.getElementById('price_toman');
+            const priceUsd = document.getElementById('price_usd');
+            
+            if (priceToman) {
+                priceToman.value = priceToman.value.replace(/,/g, '');
+            }
+            if (priceUsd) {
+                priceUsd.value = priceUsd.value.replace(/,/g, '');
+            }
+        }
+
+        // Apply theme and language on page load
+        function applySettings() {
+            const currentTheme = localStorage.getItem('theme') || 'dark';
+            const currentLanguage = localStorage.getItem('language') || 'rtl';
+            
+            if (currentTheme === 'light') {
+                document.body.classList.add('light-theme');
+                const themeToggle = document.getElementById('themeToggle');
+                if (themeToggle) {
+                    themeToggle.querySelector('i').textContent = '🌙';
+                }
+            }
+            
+            if (currentLanguage === 'ltr') {
+                document.body.setAttribute('dir', 'ltr');
+                const languageToggle = document.getElementById('languageToggle');
+                if (languageToggle) {
+                    languageToggle.innerHTML = `
+                        <img src="{% static 'shop/images/fa-flag.png' %}" alt="فارسی" class="fa-flag">
+                        <span>فارسی</span>
+                    `;
+                }
+            }
+        }
+        
+        // Run after page has loaded
+        window.addEventListener('DOMContentLoaded', applySettings);
+    </script>
+    
+    <style>
+        :root {
+            /* Dark theme variables */
+            --primary-color-dark: #6c5ce7;
+            --secondary-color-dark: #a8a4e6;
+            --background-color-dark: #1a1a1a;
+            --card-bg-dark: rgba(30, 30, 30, 0.8);
+            --text-color-dark: #ffffff;
+            --text-secondary-dark: #b3b3b3;
+            --border-color-dark: rgba(255, 255, 255, 0.1);
+
+            /* Light theme variables */
+            --primary-color-light: #5850ec;
+            --secondary-color-light: #7b79e5;
+            --background-color-light: #f7f9fc;
+            --card-bg-light: rgba(255, 255, 255, 0.9);
+            --text-color-light: #1a1a1a;
+            --text-secondary-light: #4a5568;
+            --border-color-light: rgba(0, 0, 0, 0.1);
+
+            /* Default to dark theme */
+            --primary-color: var(--primary-color-dark);
+            --secondary-color: var(--secondary-color-dark);
+            --background-color: var(--background-color-dark);
+            --card-bg: var(--card-bg-dark);
+            --text-color: var(--text-color-dark);
+            --text-secondary: var(--text-secondary-dark);
+            --border-color: var(--border-color-dark);
+            
+            --border-radius: 12px;
+            --transition: all 0.3s ease;
+        }
+
+        /* Light theme class */
+        body.light-theme {
+            --primary-color: var(--primary-color-light);
+            --secondary-color: var(--secondary-color-light);
+            --background-color: var(--background-color-light);
+            --card-bg: var(--card-bg-light);
+            --text-color: var(--text-color-light);
+            --text-secondary: var(--text-secondary-light);
+            --border-color: var(--border-color-light);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: var(--background-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            color: var(--text-color);
+        }
+
+        body[dir="ltr"] {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body[dir="rtl"] {
+            font-family: 'Doran', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1600px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .form-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            height: calc(100vh - 2rem);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-header h1 {
+            color: var(--text-color);
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-header p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.3rem;
+            color: var(--text-color);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 0.6rem;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background: var(--background-color);
+            transition: var(--transition);
+            font-size: 0.9rem;
+            color: var(--text-color);
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+        }
+
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .category-section {
+            grid-column: span 2;
+            margin-bottom: 0;
+            max-width: 400px;
+        }
+
+        .category-section select {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .attributes-container {
+            grid-column: span 4;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            gap: 1rem;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .attribute-group {
+            display: inline-block;
+            min-width: 250px;
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+            vertical-align: top;
+        }
+
+        .attribute-group:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            border-color: var(--primary-color);
+        }
+
+        .attribute-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .attribute-group select,
+        .attribute-group input {
+            width: 100%;
+            padding: 0.6rem;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background: var(--background-color);
+            transition: var(--transition);
+            font-size: 0.9rem;
+            color: var(--text-color);
+        }
+
+        .attribute-group select:focus,
+        .attribute-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+        }
+
+        .attribute-group select option {
+            background: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .attribute-group.required label::after {
+            content: " *";
+            color: #ef4444;
+        }
+
+        .image-section {
+            grid-column: span 4;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .image-upload {
+            border: 3px dashed var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            text-align: center;
+            transition: var(--transition);
+            background: rgba(108, 92, 231, 0.05);
+            position: relative;
+        }
+
+        .image-upload input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            z-index: 2;
+        }
+
+        .image-upload:hover {
+            border-color: var(--primary-color);
+            background: rgba(108, 92, 231, 0.1);
+        }
+
+        .upload-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .upload-icon {
+            width: 48px;
+            height: 48px;
+            fill: var(--primary-color);
+            opacity: 0.8;
+            transition: var(--transition);
+        }
+
+        .image-upload:hover .upload-icon {
+            transform: scale(1.1);
+            opacity: 1;
+        }
+
+        .image-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem;
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: var(--border-radius);
+            min-height: 200px;
+            direction: ltr !important;
+        }
+
+        .preview-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            border: 2px solid var(--border-color);
+            background: rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .preview-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            border-color: var(--primary-color);
+        }
+
+        .preview-item .position-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 0.2rem 0.4rem;
+            text-align: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+            z-index: 2;
+        }
+
+        .preview-item .preview-actions {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .preview-item .remove-btn,
+        .preview-item .edit-btn {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            color: white;
+            border: 2px solid white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            line-height: 1;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            pointer-events: auto;
+        }
+
+        .preview-item .remove-btn {
+            top: 5px;
+            left: 5px;
+            background: rgba(220, 38, 38, 0.9);
+        }
+
+        .preview-item .edit-btn {
+            top: 5px;
+            right: 5px;
+            background: rgba(34, 139, 34, 0.8);
+        }
+
+        .preview-item .edit-btn:hover {
+            background: rgba(34, 139, 34, 1);
+            transform: scale(1.15);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .preview-item .remove-btn:hover {
+            background: rgba(220, 38, 38, 1);
+            transform: scale(1.15);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .sortable-ghost {
+            opacity: 0.5;
+            transform: scale(1.05);
+            border-color: var(--primary-color);
+        }
+
+        .sortable-drag {
+            opacity: 0.8;
+            transform: scale(1.1);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+        }
+
+        .submit-row {
+            display: flex;
+            justify-content: flex-start;
+            gap: 1rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .submit-btn {
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: var(--border-radius);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.2), 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .errorlist {
+            color: #ef4444;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+            list-style: none;
+            padding: 0;
+        }
+
+        .messages {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 1rem;
+        }
+
+        .messages li {
+            padding: 0.75rem 1rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 0.5rem;
+        }
+
+        .messages .success {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .messages .error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .messages .warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .specs-section {
+            grid-column: span 4;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .specs-container {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: var(--border-radius);
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .spec-item {
+            display: flex;
+            gap: 0.3rem;
+            align-items: center;
+        }
+
+        .spec-item input {
+            flex: 1;
+            padding: 0.4rem;
+        }
+
+        .add-spec {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.3rem 0.5rem;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        .add-spec:hover {
+            color: var(--secondary-color);
+        }
+
+        .remove-spec {
+            background: none;
+            border: none;
+            color: #ff7675;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0.2rem;
+            transition: var(--transition);
+        }
+
+        .remove-spec:hover {
+            color: #d63031;
+        }
+
+        .error {
+            border-color: #ff7675 !important;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        .error-message {
+            color: #ff7675;
+            font-size: 0.8rem;
+            margin-top: 0.3rem;
+            display: none;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        @media (max-width: 1200px) {
+            .category-section {
+                grid-column: span 2;
+            }
+            
+            .attributes-container {
+                grid-column: span 4;
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .category-section {
+                grid-column: span 2;
+            }
+            
+            .attributes-container {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+            
+            .submit-row {
+                flex-direction: column;
+            }
+            .attribute-group {
+                width: 200px;
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--background-color);
+            border-radius: var(--border-radius);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: var(--border-radius);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        .language-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: var(--card-bg);
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: var(--transition);
+            z-index: 1000;
+        }
+
+        body[dir="rtl"] .language-toggle {
+            left: auto;
+            right: 20px;
+        }
+
+        .language-toggle:hover {
+            background: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .language-toggle img {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Add styles for tag selector */
+        .tag-section {
+            grid-column: span 2;
+            margin-bottom: 0;
+            max-width: 400px;
+        }
+        
+        .multi-select-tags {
+            width: 100%;
+            min-height: 100px !important;
+        }
+        
+        /* Select2 custom styling */
+        .select2-container--default .select2-selection--multiple {
+            background-color: rgba(0, 0, 0, 0.2) !important;
+            border: 2px solid var(--border-color) !important;
+            border-radius: var(--border-radius) !important;
+            min-height: 100px !important;
+            height: auto !important;
+        }
+        
+        .select2-container--default .select2-selection--multiple .select2-selection__rendered {
+            min-height: 100px !important;
+            height: auto !important;
+            padding: 8px !important;
+            display: block !important;
+        }
+        
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background-color: var(--primary-color) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 20px !important;
+            padding: 4px 10px !important;
+            margin: 5px !important;
+            font-size: 0.9rem !important;
+        }
+        
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+            color: white !important;
+            margin-right: 5px !important;
+        }
+        
+        .select2-dropdown {
+            background-color: var(--card-bg) !important;
+            border: 1px solid var(--border-color) !important;
+        }
+        
+        .select2-search__field {
+            background-color: rgba(0, 0, 0, 0.3) !important;
+            color: var(--text-color) !important;
+            border: 1px solid var(--border-color) !important;
+            width: 100% !important;
+        }
+        
+        .select2-results__option {
+            color: var(--text-color) !important;
+            padding: 8px 12px !important;
+        }
+        
+        .select2-results__option--highlighted {
+            background-color: var(--primary-color) !important;
+        }
+
+        /* Additional tag field styling */
+        .tag-item {
+            font-weight: 500;
+            display: inline-block;
+            padding: 2px 0;
+        }
+
+        /* Make the select2 container look better */
+        .select2-container {
+            max-width: 100%;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Improve dropdown styling */
+        .tag-dropdown {
+            padding: 8px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        /* Improve the selected tags appearance */
+        .select2-container--default .select2-selection--multiple {
+            overflow: hidden;
+            overflow-y: auto;
+            padding: 4px;
+        }
+
+        /* Better placeholder styling */
+        .select2-container--default .select2-selection--multiple .select2-selection__placeholder {
+            color: var(--text-light);
+            padding: 5px;
+            display: inline-block;
+        }
+
+        /* Fix for RTL layout */
+        .select2-container--default[dir="rtl"] .select2-selection--multiple .select2-selection__choice {
+            float: right;
+        }
+
+        /* Styles for attribute selects */
+        .attribute-group select.form-control {
+            background-color: rgba(0, 0, 0, 0.2);
+            color: var(--text-color);
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 8px 12px;
+            transition: var(--transition);
+        }
+
+        .attribute-group select.form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+        }
+
+        .attribute-group select.form-control option {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            padding: 8px;
+        }
+
+        /* Required field indicator */
+        .attribute-group.required label:after {
+            content: " *";
+            color: #ef4444;
+            font-weight: bold;
+        }
+
+        /* Edit buttons on image previews */
+        .preview-item {
+            position: relative;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            width: 150px;
+            height: 150px;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: var(--transition);
+            border: 2px solid var(--border-color);
+        }
+
+        .preview-item.primary-image {
+            border-color: var(--primary-color);
+        }
+
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .preview-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .preview-item button {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .preview-item button:hover {
+            background-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        /* Add theme toggle button */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--card-bg);
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: var(--transition);
+            z-index: 1000;
+        }
+
+        .theme-toggle:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .theme-toggle i {
+            font-size: 1.2rem;
+        }
+
+        /* Add these styles for image preview */
+        .preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .preview-item {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .preview-item button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .preview-item .edit-image {
+            right: 35px;
+        }
+
+        /* Add crop modal styles */
+        .crop-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .crop-modal.active {
+            display: flex;
+        }
+
+        .crop-modal-content {
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .crop-container {
+            width: 100%;
+            height: 600px;
+            overflow: hidden;
+            border-radius: var(--border-radius);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .crop-container img {
+            max-width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+        }
+
+        .crop-controls {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+            padding-top: 0.5rem;
+        }
+
+        .crop-save-btn, .crop-cancel-btn {
+            padding: 0.3rem 0.8rem;
+            border-radius: var(--border-radius);
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.9rem;
+        }
+
+        .crop-save-btn {
+            background: var(--primary-color);
+            color: rgb(251, 251, 251);
+        }
+
+        .crop-cancel-btn {
+            background: var(--border-color);
+            color: rgb(208, 184, 0);
+        }
+
+        .crop-save-btn:hover, .crop-cancel-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .crop-modal-content {
+                width: 95%;
+                padding: 0.8rem;
+            }
+            
+            .crop-container {
+                height: 162px;
+            }
+            
+            .crop-container img {
+                max-height: 162px;
+            }
+        }
+
+        /* Switch styles */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            position: absolute;
+            z-index: 1;
+            cursor: pointer;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #28a745;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .status-text {
+            margin-right: 15px;
+            font-size: 14px;
+            color: #6c757d;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .status-text.active {
+            color: #28a745;
+        }
+
+        .status-text.inactive {
+            color: #dc3545;
+        }
+
+        /* Add these new styles */
+        .form-section {
+            grid-column: span 4;
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .section-title {
+            color: var(--text-color);
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .section-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .form-section .form-group {
+            margin-bottom: 0;
+        }
+
+        .form-section .category-section,
+        .form-section .tag-section {
+            grid-column: span 2;
+        }
+
+        .form-section .image-section {
+            grid-column: span 4;
+        }
+
+        .form-section .specs-section {
+            grid-column: span 4;
+        }
+
+        .form-section .attributes-container {
+            grid-column: span 4;
+        }
+
+        @media (max-width: 768px) {
+            .section-content {
+                grid-template-columns: 1fr;
+            }
+
+            .form-section .category-section,
+            .form-section .tag-section {
+                grid-column: span 1;
+            }
+        }
+        /* Button styles moved to earlier section to avoid duplication */
+        .preview-item {
+            position: relative;
+            display: inline-block;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" id="themeToggle" onclick="return toggleTheme();">
+        <i>🌓</i>
+        <span>تغییر تم</span>
+    </button>
+
+    <button class="language-toggle" id="languageToggle" onclick="return toggleLanguage();">
+        <img src="{% static 'shop/images/en-flag.png' %}" alt="English" class="en-flag">
+        <span>English</span>
+    </button>
+
+    <div class="container">
+        <div class="form-card">
+            <div class="form-header">
+                <h1>{% if is_edit %}{{ title }}{% else %}افزودن محصول جدید{% endif %}</h1>
+                <div class="header-actions">
+                    <input type="submit" value="ذخیره پیش‌نویس" name="_save" class="submit-btn">
+                    <input type="submit" value="پیش‌نمایش" name="_preview" class="submit-btn">
+                    <input type="submit" value="انتشار" name="_continue" class="submit-btn">
+                </div>
+            </div>
+
+            {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            {% if form.errors %}
+            <div class="error-summary">
+                {{ form.non_field_errors }}
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-error">
+                            {{ field.label }}: {{ error }}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <form method="post" enctype="multipart/form-data" id="product_form" novalidate>
+                {% csrf_token %}
+                {% if is_edit %}
+                <input type="hidden" name="is_edit" value="true">
+                <input type="hidden" id="product_id" name="product_id" value="{{ product.id }}">
+                {% endif %}
+                <div class="form-grid">
+                    <!-- Basic Information Section -->
+                    <div class="form-section">
+                        <h2 class="section-title">اطلاعات پایه</h2>
+                        <div class="section-content">
+                            <!-- Product Name -->
+                            <div class="form-group">
+                                <label for="name">نام محصول</label>
+                                <input type="text" id="name" name="name" required {% if product %}value="{{ product.name }}"{% endif %}>
+                            </div>
+
+                            <!-- Brand -->
+                            <div class="form-group">
+                                <label for="brand">برند</label>
+                                <input type="text" id="brand" name="brand" {% if product %}value="{{ product.brand }}"{% endif %}>
+                            </div>
+
+                            <!-- Brand Image Section -->
+                            <div class="form-group">
+                                <label for="brand_image">تصویر برند</label>
+                                <div class="image-upload">
+                                    <input type="file" id="brand_image" name="brand_image" accept="image/*">
+                                    <div class="upload-area">
+                                        <svg class="upload-icon" viewBox="0 0 24 24">
+                                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                                        </svg>
+                                        <p>برای انتخاب تصویر برند کلیک کنید</p>
+                                        <p class="upload-hint">PNG, JPG تا 10 مگابایت</p>
+                                    </div>
+                                </div>
+                                <div id="brandImagePreview" class="current-image" style="margin-top: 10px;">
+                                    {% if product and product.brand_image %}
+                                    <img src="{{ product.brand_image.url }}" alt="Brand Image" style="max-width: 200px;">
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="form-group">
+                                <label for="description">توضیحات</label>
+                                <textarea id="description" name="description" required>{% if product %}{{ product.description }}{% endif %}</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category and Tags Section -->
+                    <div class="form-section">
+                        <h2 class="section-title">دسته‌بندی و برچسب‌ها</h2>
+                        <div class="section-content">
+                            <!-- Category Section -->
+                            <div class="form-group category-section">
+                                <label for="id_category">{{ form.category.label }}</label>
+                                {{ form.category }}
+                                {% if form.category.errors %}
+                                <div class="error-message">{{ form.category.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Tags Section -->
+                            <div class="form-group tag-section">
+                                <label for="id_tags">برچسب‌ها</label>
+                                <select name="tags" id="id_tags" multiple class="form-control multi-select-tags" data-placeholder="انتخاب برچسب‌ها">
+                                    <!-- Options will be populated dynamically by JavaScript -->
+                                </select>
+                                {% if form.tags.errors %}
+                                <div class="error-message">{{ form.tags.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">برچسب‌ها بر اساس دسته‌بندی انتخاب شده نمایش داده می‌شوند</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pricing Section -->
+                    <div class="form-section">
+                        <h2 class="section-title">قیمت‌گذاری</h2>
+                        <div class="section-content">
+                            <div class="form-group">
+                                <label for="price_toman">قیمت (تومان) <span class="required">*</span></label>
+                                <input type="text" id="price_toman" name="price_toman" step="1" min="0" required {% if product %}value="{{ product.price_toman }}"{% endif %} oninput="formatNumberWithCommas(this)" onblur="formatNumberWithCommas(this)">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="price_usd">قیمت (دلار) - اختیاری</label>
+                                <input type="text" id="price_usd" name="price_usd" step="0.01" min="0" {% if product %}value="{{ product.price_usd }}"{% endif %} oninput="formatNumberWithCommas(this)" onblur="formatNumberWithCommas(this)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inventory Section -->
+                    <div class="form-section">
+                        <h2 class="section-title">موجودی و وضعیت</h2>
+                        <div class="section-content">
+                            <div class="form-group">
+                                <label for="stock">تعداد موجودی</label>
+                                <input type="number" id="stock" name="stock_quantity" required {% if product %}value="{{ product.stock_quantity }}"{% endif %}>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="is_active">وضعیت محصول</label>
+                                <div class="switch">
+                                    <input type="checkbox" id="is_active" name="is_active" {% if not product or product.is_active %}checked{% endif %}>
+                                    <span class="slider round"></span>
+                                </div>
+                                <span class="status-text" id="statusText">فعال</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Product Images Section -->
+                    <div class="image-section">
+                        <label>تصاویر محصول</label>
+                        <div class="image-upload">
+                            <input type="file" id="imageInput" name="images" multiple accept="image/*">
+                            <div class="upload-area">
+                                <svg class="upload-icon" viewBox="0 0 24 24">
+                                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                                </svg>
+                                <p>برای انتخاب تصاویر کلیک کنید</p>
+                                <p class="upload-hint">PNG, JPG تا 10 مگابایت</p>
+                            </div>
+                        </div>
+                        <div class="image-preview" id="imagePreviews"></div>
+                    </div>
+
+                    <!-- Specifications Section -->
+                    <div class="form-section">
+                        <h2 class="section-title">مشخصات فنی</h2>
+                        <div class="section-content">
+                            <div class="specs-container" id="specsContainer">
+                                <div class="spec-item">
+                                    <input type="text" placeholder="کلید (مثال: رنگ)" name="spec_key[]">
+                                    <input type="text" placeholder="مقدار (مثال: قرمز)" name="spec_value[]">
+                                    <button type="button" class="remove-spec">×</button>
+                                </div>
+                            </div>
+                            <button type="button" class="add-spec">+ افزودن مشخصه</button>
+                        </div>
+                    </div>
+
+                    <!-- Attributes Container -->
+                    <div class="form-section">
+                        <h2 class="section-title">ویژگی‌های دسته‌بندی</h2>
+                        <div class="section-content">
+                            <div id="attributes-container" class="attributes-container">
+                                <!-- Category attributes will be loaded here dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="submit-row">
+                    <input type="submit" value="ذخیره" class="submit-btn" name="_save">
+                    <input type="submit" value="ذخیره و افزودن محصول جدید" name="_addanother" class="submit-btn">
+                    <input type="submit" value="ذخیره و ادامه ویرایش" name="_continue" class="submit-btn">
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Crop Modal HTML -->
+    <div class="crop-modal">
+        <div class="crop-modal-content">
+            <div class="crop-container">
+                <img id="cropImage" src="" alt="Image to crop">
+            </div>
+            <div class="crop-controls">
+                <button class="crop-cancel-btn">انصراف</button>
+                <button class="crop-save-btn">ذخیره</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Parse category attributes JSON
+            let categoryAttributes = {};
+            let existingAttrs = {};
+            try {
+                categoryAttributes = JSON.parse('{{ category_attributes|escapejs }}');
+            } catch (e) {
+                categoryAttributes = {};
+            }
+            try {
+                existingAttrs = JSON.parse('{{ existing_attrs|escapejs }}');
+            } catch (e) {
+                existingAttrs = {};
+            }
+
+            const categorySelect = document.getElementById('id_category');
+            const attributesContainer = document.getElementById('attributes-container');
+
+            function renderAttributes(categoryId) {
+                attributesContainer.innerHTML = '';
+                if (!categoryId || !categoryAttributes[categoryId] || categoryAttributes[categoryId].length === 0) {
+                    attributesContainer.innerHTML = '<div style="color: #888;">ویژگی‌ای برای این دسته‌بندی تعریف نشده است.</div>';
+                    return;
+                }
+                categoryAttributes[categoryId].forEach(attr => {
+                    let fieldHtml = '';
+                    const required = attr.required ? 'required' : '';
+                    const label = `<label>${attr.key}${attr.required ? ' <span style=\'color:red\'>*</span>' : ''}</label>`;
+                    const existingValue = existingAttrs[attr.key] || '';
+                    if (attr.type === 'select') {
+                        fieldHtml = `<select name="attr_${attr.key}" class="form-control" ${required}>
+                            <option value="">انتخاب کنید</option>
+                            ${attr.values.map(v => `<option value="${v}"${existingValue === v ? ' selected' : ''}>${v}</option>`).join('')}
+                        </select>`;
+                    } else if (attr.type === 'multiselect') {
+                        fieldHtml = `<select name="attr_${attr.key}" class="form-control" multiple ${required}>
+                            ${attr.values.map(v => `<option value="${v}"${Array.isArray(existingValue) ? existingValue.includes(v) : (existingValue === v) ? ' selected' : ''}>${v}</option>`).join('')}
+                        </select>`;
+                    } else if (attr.type === 'number') {
+                        fieldHtml = `<input type="number" name="attr_${attr.key}" class="form-control" value="${existingValue}" ${required} />`;
+                    } else if (attr.type === 'boolean') {
+                        fieldHtml = `<input type="checkbox" name="attr_${attr.key}" class="form-check-input" ${existingValue ? 'checked' : ''} ${required} />`;
+                    } else {
+                        fieldHtml = `<input type="text" name="attr_${attr.key}" class="form-control" value="${existingValue}" ${required} />`;
+                    }
+                    attributesContainer.innerHTML += `<div class="attribute-group">${label}${fieldHtml}</div>`;
+                });
+            }
+
+            // Initial render (if editing)
+            if (categorySelect.value) {
+                renderAttributes(categorySelect.value);
+            }
+
+            // Update on category change
+            categorySelect.addEventListener('change', function() {
+                renderAttributes(this.value);
+            });
+
+            const imageInput = document.getElementById('imageInput');
+            const imagePreviews = document.getElementById('imagePreviews');
+            const imageUpload = document.querySelector('.image-upload');
+            let processedFiles = new Set();
+            let cropper = null;
+            let imagesToDelete = new Set();
+
+            // Initialize Sortable for image previews
+            new Sortable(imagePreviews, {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                dragClass: 'sortable-drag',
+                handle: '.preview-item img',
+                onEnd: function() {
+                    updatePositions();
+                }
+            });
+
+            // Initialize existing images if editing a product
+            const productImages = JSON.parse('{{ product_images|safe }}');
+            if (productImages && productImages.length > 0) {
+                productImages.forEach((img, index) => {
+                    const previewItem = document.createElement('div');
+                    previewItem.className = 'preview-item';
+                    previewItem.dataset.imageId = img.id;
+                    
+                    const imgElem = document.createElement('img');
+                    imgElem.src = img.url;
+                    imgElem.alt = 'Preview';
+
+                    const positionLabel = document.createElement('div');
+                    positionLabel.className = 'position-label';
+                    positionLabel.textContent = `${index + 1}/${productImages.length}`;
+
+                    const removeBtn = document.createElement('button');
+                    removeBtn.type = 'button';
+                    removeBtn.className = 'remove-btn';
+                    removeBtn.title = 'Remove Image';
+                                            removeBtn.textContent = '✕';
+
+                    const editBtn = document.createElement('button');
+                    editBtn.type = 'button';
+                    editBtn.className = 'edit-btn';
+                    editBtn.title = 'Edit Image';
+                    editBtn.textContent = '✏️';
+
+                    previewItem.appendChild(imgElem);
+                    previewItem.appendChild(positionLabel);
+                    previewItem.appendChild(removeBtn);
+                    previewItem.appendChild(editBtn);
+
+                    // Handle edit button
+                    const editBtnElement = previewItem.querySelector('.edit-btn');
+                    editBtnElement.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const img = previewItem.querySelector('img');
+                        openCropModal(img.src, previewItem);
+                    });
+
+                    // Handle remove button for existing images
+                    const removeBtnElement = previewItem.querySelector('.remove-btn');
+                    removeBtnElement.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        if (confirm('آیا مطمئن هستید که می‌خواهید این تصویر را حذف کنید؟')) {
+                            // If this is an existing image (has imageId), track it for deletion
+                            if (previewItem.dataset.imageId) {
+                                imagesToDelete.add(previewItem.dataset.imageId);
+                            }
+                            
+                            previewItem.remove();
+                            processedFiles.delete(img.src);
+                            updatePositions();
+                        }
+                    });
+
+                    // Add this to prevent drag from starting on buttons
+                    const buttons = previewItem.querySelectorAll('.remove-btn, .edit-btn');
+                    buttons.forEach(btn => {
+                        btn.addEventListener('mousedown', e => e.stopPropagation());
+                        btn.addEventListener('pointerdown', e => e.stopPropagation());
+                    });
+
+                    imagePreviews.appendChild(previewItem);
+                });
+            }
+
+            // Handle file selection
+            imageInput.addEventListener('change', function(e) {
+                if (e.target.files && e.target.files.length > 0) {
+                    handleFiles(e.target.files);
+                }
+            });
+
+            // Handle drag and drop
+            imageUpload.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                imageUpload.classList.add('highlight');
+            });
+
+            imageUpload.addEventListener('dragleave', function() {
+                imageUpload.classList.remove('highlight');
+            });
+
+            imageUpload.addEventListener('drop', function(e) {
+                e.preventDefault();
+                imageUpload.classList.remove('highlight');
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    handleFiles(e.dataTransfer.files);
+                }
+            });
+
+            function handleFiles(files) {
+                const maxFiles = 10;
+                const currentFiles = imagePreviews.children.length;
+                const remainingSlots = maxFiles - currentFiles;
+
+                if (files.length > remainingSlots) {
+                    alert(`شما فقط می‌توانید ${remainingSlots} تصویر دیگر آپلود کنید (حداکثر 10 تصویر)`);
+                    return;
+                }
+
+                Array.from(files).forEach(file => {
+                    if (!file.type.startsWith('image/')) {
+                        alert('لطفا فقط فایل‌های تصویری آپلود کنید (JPEG, PNG, GIF)');
+                        return;
+                    }
+
+                    const maxSize = 10 * 1024 * 1024; // 10MB
+                    if (file.size > maxSize) {
+                        alert('حجم فایل نباید بیشتر از 10 مگابایت باشد');
+                        return;
+                    }
+
+                    if (processedFiles.has(file.name)) {
+                        return;
+                    }
+                    processedFiles.add(file.name);
+
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const previewItem = document.createElement('div');
+                        previewItem.className = 'preview-item';
+                        previewItem.dataset.originalFileName = file.name;
+                        
+                        const imgElem = document.createElement('img');
+                        imgElem.src = e.target.result;
+                        imgElem.alt = 'Preview';
+
+                        const positionLabel = document.createElement('div');
+                        positionLabel.className = 'position-label';
+                        positionLabel.textContent = `${imagePreviews.children.length + 1}/${imagePreviews.children.length + 1}`;
+
+                        const removeBtn = document.createElement('button');
+                        removeBtn.type = 'button';
+                        removeBtn.className = 'remove-btn';
+                        removeBtn.title = 'Remove Image';
+                        removeBtn.textContent = '✕';
+
+                        const editBtn = document.createElement('button');
+                        editBtn.type = 'button';
+                        editBtn.className = 'edit-btn';
+                        editBtn.title = 'Edit Image';
+                        editBtn.textContent = '✏️';
+
+                        previewItem.appendChild(imgElem);
+                        previewItem.appendChild(positionLabel);
+                        previewItem.appendChild(removeBtn);
+                        previewItem.appendChild(editBtn);
+
+                        // Handle edit button
+                        const editBtnElement = previewItem.querySelector('.edit-btn');
+                        editBtnElement.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const img = previewItem.querySelector('img');
+                            openCropModal(img.src, previewItem);
+                        });
+
+                        // Handle remove button
+                        const removeBtnElement = previewItem.querySelector('.remove-btn');
+                        removeBtnElement.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (confirm('آیا مطمئن هستید که می‌خواهید این تصویر را حذف کنید؟')) {
+                                // If this is an existing image (has imageId), track it for deletion
+                                if (previewItem.dataset.imageId) {
+                                    imagesToDelete.add(previewItem.dataset.imageId);
+                                }
+                                previewItem.remove();
+                                processedFiles.delete(file.name);
+                                updatePositions();
+                            }
+                        });
+
+                        // Add this to prevent drag from starting on buttons
+                        const buttons = previewItem.querySelectorAll('.remove-btn, .edit-btn');
+                        buttons.forEach(btn => {
+                            btn.addEventListener('mousedown', e => e.stopPropagation());
+                            btn.addEventListener('pointerdown', e => e.stopPropagation());
+                        });
+
+                        imagePreviews.appendChild(previewItem);
+                        updatePositions();
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            function updatePositions() {
+                const items = imagePreviews.children;
+                Array.from(items).forEach((item, index) => {
+                    const label = item.querySelector('.position-label');
+                    if (label) {
+                        label.textContent = `${index + 1}/${items.length}`;
+                    }
+                });
+            }
+
+            // Update the crop modal save button functionality
+            function openCropModal(imageUrl, previewItem) {
+                const cropModal = document.querySelector('.crop-modal');
+                const cropImage = document.getElementById('cropImage');
+                
+                cropImage.src = imageUrl;
+                cropModal.classList.add('active');
+                
+                // Initialize cropper after image is loaded
+                cropImage.onload = function() {
+                    if (cropper) {
+                        cropper.destroy();
+                    }
+                    
+                    cropper = new Cropper(cropImage, {
+                        aspectRatio: 4/5,
+                        viewMode: 1,
+                        dragMode: 'move',
+                        autoCropArea: 0.8,
+                        restore: false,
+                        guides: true,
+                        center: true,
+                        highlight: false,
+                        cropBoxMovable: true,
+                        cropBoxResizable: true,
+                        toggleDragModeOnDblclick: false,
+                        minContainerWidth: 195,
+                        minContainerHeight: 244,
+                        maxContainerWidth: 195,
+                        maxContainerHeight: 244
+                    });
+                };
+
+                // Handle save button
+                const saveBtn = cropModal.querySelector('.crop-save-btn');
+                saveBtn.onclick = function() {
+                    if (cropper) {
+                        const canvas = cropper.getCroppedCanvas({
+                            width: 800, // Fixed width for 4:5 aspect ratio
+                            height: 1000, // Fixed height for 4:5 aspect ratio (800 * 5/4)
+                            fillColor: '#fff',
+                            imageSmoothingEnabled: true,
+                            imageSmoothingQuality: 'high',
+                        });
+
+                        if (canvas) {
+                            // Convert canvas to blob
+                            canvas.toBlob(function(blob) {
+                                // Create a new File object from the blob
+                                const fileName = previewItem.dataset.originalFileName || 'cropped-image.jpg';
+                                const file = new File([blob], fileName, { type: 'image/jpeg' });
+                                
+                                // Create a new FileList-like object
+                                const dataTransfer = new DataTransfer();
+                                dataTransfer.items.add(file);
+                                
+                                // Update the file input
+                                const imageInput = document.getElementById('imageInput');
+                                const newFileList = dataTransfer.files;
+                                
+                                // If this is a new image (not editing existing)
+                                if (!previewItem.dataset.imageId) {
+                                    // Add the new file to the input
+                                    imageInput.files = newFileList;
+                                    
+                                    // Update the preview image
+                                    const img = previewItem.querySelector('img');
+                                    img.src = URL.createObjectURL(blob);
+                                } else {
+                                    // For existing images, keep the imageId and update in place
+                                    const originalImageId = previewItem.dataset.imageId;
+                                    console.log('Cropping existing image with ID:', originalImageId);
+                                    
+                                    // DON'T delete imageId - keep it to maintain position
+                                    // DON'T add to imagesToDelete - we're updating, not deleting
+                                    
+                                    const img = previewItem.querySelector('img');
+                                    img.src = URL.createObjectURL(blob);
+                                    
+                                    // Store the cropped image data for form submission
+                                    previewItem.dataset.croppedImage = canvas.toDataURL('image/jpeg');
+                                    console.log('Stored cropped image data, keeping imageId:', originalImageId);
+                                }
+                            }, 'image/jpeg', 0.95);
+                        }
+
+                        cropper.destroy();
+                        cropper = null;
+                    }
+                    cropModal.classList.remove('active');
+                };
+
+                // Handle cancel button
+                const cancelBtn = cropModal.querySelector('.crop-cancel-btn');
+                cancelBtn.onclick = function() {
+                    if (cropper) {
+                        cropper.destroy();
+                        cropper = null;
+                    }
+                    cropModal.classList.remove('active');
+                };
+            }
+
+            // Handle status toggle
+            const toggleSwitch = document.getElementById('is_active');
+            const statusText = document.getElementById('statusText');
+            
+            function updateToggleState() {
+                if (toggleSwitch.checked) {
+                    statusText.textContent = 'فعال';
+                    statusText.classList.remove('inactive');
+                    statusText.classList.add('active');
+                } else {
+                    statusText.textContent = 'غیرفعال';
+                    statusText.classList.remove('active');
+                    statusText.classList.add('inactive');
+                }
+            }
+            
+            // Set initial state
+            updateToggleState();
+            
+            // Add click event listener to the switch container
+            const switchContainer = document.querySelector('.switch');
+            switchContainer.addEventListener('click', function(e) {
+                // Prevent the click from being handled twice
+                if (e.target === toggleSwitch) return;
+                
+                // Toggle the checkbox
+                toggleSwitch.checked = !toggleSwitch.checked;
+                updateToggleState();
+            });
+            
+            // Also listen for direct changes to the checkbox
+            toggleSwitch.addEventListener('change', updateToggleState);
+
+            // Handle form submission
+            function handleFormSubmit(e) {
+                e.preventDefault();
+                
+                // Show loading state
+                const submitButtons = this.querySelectorAll('button[type="submit"]');
+                submitButtons.forEach(btn => btn.disabled = true);
+                
+                // Create FormData object
+                const formData = new FormData(this);
+                
+                // Handle is_active field
+                const isActiveCheckbox = document.getElementById('is_active');
+                formData.set('is_active', isActiveCheckbox.checked ? 'true' : 'false');
+                
+                // Remove commas from price fields before submission
+                const priceToman = document.getElementById('price_toman');
+                const priceUsd = document.getElementById('price_usd');
+                
+                if (priceToman && priceToman.value) {
+                    formData.set('price_toman', priceToman.value.replace(/,/g, ''));
+                }
+                if (priceUsd && priceUsd.value) {
+                    formData.set('price_usd', priceUsd.value.replace(/,/g, ''));
+                }
+                
+                // Handle images - NEW SIMPLIFIED APPROACH
+                // Send ALL images as files in their DOM order
+                const imageItems = document.querySelectorAll('.preview-item');
+                
+                console.log('🔄 NEW APPROACH: Processing all images uniformly');
+                console.log(`Found ${imageItems.length} total images to process`);
+                
+                // Convert all images to files and send in order
+                const imagePromises = [];
+                
+                imageItems.forEach((item, index) => {
+                    const img = item.querySelector('img');
+                    if (!img || !img.src) return;
+                    
+                    console.log(`Processing image ${index + 1}/${imageItems.length}`);
+                    
+                    if (item.dataset.croppedImage) {
+                        // This image was cropped - use cropped data
+                        console.log(`  - Image ${index}: Using cropped data`);
+                        const base64Data = item.dataset.croppedImage.split(',')[1];
+                        const byteCharacters = atob(base64Data);
+                        const byteArrays = [];
+                        
+                        for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+                            const slice = byteCharacters.slice(offset, offset + 512);
+                            const byteNumbers = new Array(slice.length);
+                            
+                            for (let i = 0; i < slice.length; i++) {
+                                byteNumbers[i] = slice.charCodeAt(i);
+                            }
+                            
+                            const byteArray = new Uint8Array(byteNumbers);
+                            byteArrays.push(byteArray);
+                        }
+                        
+                        const blob = new Blob(byteArrays, { type: 'image/jpeg' });
+                        const fileName = `image_${index}.jpg`;
+                        const file = new File([blob], fileName, { type: 'image/jpeg' });
+                        
+                        formData.append('all_images', file);
+                        formData.append('image_order', index.toString());
+                        
+                    } else if (item.dataset.imageId) {
+                        // This is an existing unchanged image - convert to blob
+                        console.log(`  - Image ${index}: Converting existing image to blob`);
+                        
+                        const promise = fetch(img.src)
+                            .then(response => response.blob())
+                            .then(blob => {
+                                const fileName = `existing_image_${index}.jpg`;
+                                const file = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
+                                formData.append('all_images', file);
+                                formData.append('image_order', index.toString());
+                                console.log(`  ✅ Converted existing image ${index} to file`);
+                            })
+                            .catch(error => {
+                                console.error(`Error converting image ${index}:`, error);
+                            });
+                        
+                        imagePromises.push(promise);
+                        
+                    } else {
+                        // This should be a new image - but we'll handle it the same way
+                        console.log(`  - Image ${index}: New image (should already be in form)`);
+                        formData.append('image_order', index.toString());
+                    }
+                });
+                
+                // Wait for all image conversions to complete, then submit
+                Promise.all(imagePromises).then(() => {
+                    console.log('✅ All images processed, submitting form');
+                    
+                    // Send AJAX request
+                    fetch(window.location.href, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            window.location.href = data.redirect_url;
+                        } else {
+                            alert(data.error || 'خطا در ذخیره محصول');
+                            submitButtons.forEach(btn => btn.disabled = false);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('خطا در ارتباط با سرور');
+                        submitButtons.forEach(btn => btn.disabled = false);
+                    });
+                }).catch(error => {
+                    console.error('Error processing images:', error);
+                    alert('خطا در پردازش تصاویر');
+                    submitButtons.forEach(btn => btn.disabled = false);
+                });
+            }
+
+            // Add event listener for form submission
+            const form = document.getElementById('product_form');
+            form.addEventListener('submit', handleFormSubmit);
+
+            // Add brand image preview functionality
+            const brandImageInput = document.getElementById('brand_image');
+            const brandImagePreview = document.getElementById('brandImagePreview');
+
+            brandImageInput.addEventListener('change', function(e) {
+                if (e.target.files && e.target.files[0]) {
+                    const file = e.target.files[0];
+                    
+                    // Check file type
+                    if (!file.type.startsWith('image/')) {
+                        alert('لطفا فقط فایل‌های تصویری آپلود کنید (JPEG, PNG, GIF)');
+                        return;
+                    }
+
+                    // Check file size (10MB limit)
+                    const maxSize = 10 * 1024 * 1024;
+                    if (file.size > maxSize) {
+                        alert('حجم فایل نباید بیشتر از 10 مگابایت باشد');
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        brandImagePreview.innerHTML = `<img src="${e.target.result}" alt="Brand Image" style="max-width: 200px;">`;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+{% for sub_attr in subcategory_attributes %}
+    {% with attr=sub_attr.attribute %}
+    <div class="attribute-group {% if sub_attr.is_required %}required{% endif %}" data-attribute-key="{{ attr.key }}">
+        <label class="form-label">
+            {{ attr.name }}
+            {% if sub_attr.is_required %}
+                <span class="text-danger">*</span>
+            {% endif %}
+            {% if attr.description %}
+                <small class="text-muted d-block">{{ attr.description }}</small>
+            {% endif %}
+        </label>
+        
+        {% if attr.type == 'select' %}
+            <select name="attr_{{ attr.key }}" class="form-control form-select" {% if sub_attr.is_required %}required{% endif %}>
+                <option value="">انتخاب کنید</option>
+                {% for value in attr.values.all %}
+                    <option value="{{ value.value }}" {% if value.color_code %}data-color="{{ value.color_code }}"{% endif %}>
+                        {{ value.value }}
+                    </option>
+                {% endfor %}
+            </select>
+            
+        {% elif attr.type == 'multiselect' %}
+            <select name="attr_{{ attr.key }}" class="form-control multi-select" multiple="multiple" {% if sub_attr.is_required %}required{% endif %}>
+                {% for value in attr.values.all %}
+                    <option value="{{ value.value }}" {% if value.color_code %}data-color="{{ value.color_code }}"{% endif %}>
+                        {{ value.value }}
+                    </option>
+                {% endfor %}
+            </select>
+            
+        {% elif attr.type == 'color' %}
+            <div class="color-selector">
+                {% for value in attr.values.all %}
+                    <div class="color-option" data-value="{{ value.value }}" title="{{ value.value }}">
+                        <input type="radio" name="attr_{{ attr.key }}" value="{{ value.value }}" id="color_{{ attr.key }}_{{ value.id }}" {% if sub_attr.is_required and forloop.first %}required{% endif %} />
+                        <label for="color_{{ attr.key }}_{{ value.id }}" class="color-label">
+                            {% if value.color_code %}
+                                <span class="color-swatch" style="background-color: {{ value.color_code }};"></span>
+                            {% endif %}
+                            {{ value.value }}
+                        </label>
+                    </div>
+                {% endfor %}
+            </div>
+            
+        {% elif attr.type == 'size' %}
+            <div class="size-selector">
+                {% for value in attr.values.all %}
+                    <div class="size-option">
+                        <input type="radio" name="attr_{{ attr.key }}" value="{{ value.value }}" id="size_{{ attr.key }}_{{ value.id }}" {% if sub_attr.is_required and forloop.first %}required{% endif %} />
+                        <label for="size_{{ attr.key }}_{{ value.id }}" class="size-label">
+                            {{ value.value }}
+                        </label>
+                    </div>
+                {% endfor %}
+            </div>
+            
+        {% elif attr.type == 'number' %}
+            <input type="number" name="attr_{{ attr.key }}" class="form-control" {% if sub_attr.is_required %}required{% endif %} placeholder="عدد وارد کنید" />
+            
+        {% elif attr.type == 'boolean' %}
+            <div class="form-check">
+                <input type="checkbox" name="attr_{{ attr.key }}" id="attr_{{ attr.key }}" class="form-check-input" value="true" />
+                <label for="attr_{{ attr.key }}" class="form-check-label">
+                    بله
+                </label>
+            </div>
+            
+        {% else %}
+            <!-- Default text input -->
+            <input type="text" name="attr_{{ attr.key }}" class="form-control" {% if sub_attr.is_required %}required{% endif %} placeholder="متن وارد کنید" />
+        {% endif %}
+        
+        {% if attr.type == 'color' or attr.type == 'size' %}
+        <style>
+            .color-selector, .size-selector {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                margin-top: 0.5rem;
+            }
+            
+            .color-option, .size-option {
+                position: relative;
+            }
+            
+            .color-option input[type="radio"], .size-option input[type="radio"] {
+                position: absolute;
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+            
+            .color-label, .size-label {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.5rem;
+                border: 2px solid #444;
+                border-radius: 6px;
+                cursor: pointer;
+                background: #2a2a2a;
+                color: #e0e0e0;
+                transition: all 0.2s ease;
+                min-width: 60px;
+                justify-content: center;
+            }
+            
+            .color-option input[type="radio"]:checked + .color-label,
+            .size-option input[type="radio"]:checked + .size-label {
+                border-color: #6c5ce7;
+                background: #6c5ce7;
+                color: white;
+            }
+            
+            .color-swatch {
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                border: 2px solid #fff;
+                display: inline-block;
+                box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+            }
+        </style>
+        {% endif %}
+    </div>
+    {% endwith %}
+{% empty %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        No attributes configured for this category yet.
+    </div>
+{% endfor %} 

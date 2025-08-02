@@ -1,0 +1,375 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Image Editor - Edit{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+<style>
+    .image-container {
+        max-width: 100%;
+        margin: 0 auto;
+        position: relative;
+        overflow: hidden;
+        text-align: center;
+    }
+    
+    .image-container img {
+        max-width: 100%;
+        max-height: 70vh;
+        display: block;
+        margin: 0 auto;
+    }
+    
+    .cropper-container {
+        max-height: 70vh;
+        margin: 0 auto;
+    }
+    
+    .cropper-view-box,
+    .cropper-face {
+        border-radius: 0;
+    }
+    
+    .btn-toolbar {
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .btn-group {
+        margin-right: 0.5rem;
+    }
+    
+    .btn-success {
+        display: none;
+    }
+    
+    .crop-active .btn-success.apply-crop {
+        display: inline-block;
+    }
+    
+    /* Make download button always visible */
+    .btn-success.download-btn {
+        display: inline-block;
+        background-color: #28a745;
+        border-color: #28a745;
+    }
+    
+    /* Button hover effects */
+    .btn-outline-primary:hover {
+        background-color: #0d6efd;
+        color: white;
+    }
+    
+    .btn-success:hover {
+        background-color: #218838;
+        border-color: #1e7e34;
+    }
+    
+    /* Active button state */
+    .btn-outline-primary.active {
+        background-color: #0d6efd;
+        color: white;
+    }
+    
+    .loader {
+        display: none;
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid #3498db;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">Image Editor</h3>
+                    <a href="{% url 'image_editor:home' %}" class="btn btn-sm btn-light">Upload New Image</a>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info" id="instruction">
+                        Use the tools below to edit your image. Click "Crop" to enable crop mode,
+                        or rotate using the rotation buttons.
+                    </div>
+                    
+                    <div class="image-container">
+                        <img src="{{ image_url }}" id="image" class="img-fluid">
+                    </div>
+                    
+                    <div class="loader mt-3" id="loader"></div>
+                    
+                    <div class="btn-toolbar mt-3" role="toolbar" id="toolbar">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-primary" id="cropBtn">
+                                <i class="bi bi-crop"></i> Crop
+                            </button>
+                            <button type="button" class="btn btn-success apply-crop" id="applyCropBtn">
+                                <i class="bi bi-check-lg"></i> Apply Crop
+                            </button>
+                        </div>
+                        
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-primary" id="rotateLeftBtn">
+                                <i class="bi bi-arrow-counterclockwise"></i> Rotate Left
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" id="rotateRightBtn">
+                                <i class="bi bi-arrow-clockwise"></i> Rotate Right
+                            </button>
+                        </div>
+                        
+                        <div class="btn-group ms-auto" role="group">
+                            <a href="{% url 'image_editor:download_image' image.id %}" class="btn btn-success download-btn" id="downloadBtn">
+                                <i class="bi bi-download"></i> Download
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const image = document.getElementById('image');
+        const cropBtn = document.getElementById('cropBtn');
+        const applyCropBtn = document.getElementById('applyCropBtn');
+        const rotateLeftBtn = document.getElementById('rotateLeftBtn');
+        const rotateRightBtn = document.getElementById('rotateRightBtn');
+        const instructionEl = document.getElementById('instruction');
+        const loaderEl = document.getElementById('loader');
+        const toolbarEl = document.getElementById('toolbar');
+        
+        let cropper;
+        
+        // Make sure image is fully loaded before allowing crop operations
+        if (image.complete) {
+            enableCropButton();
+        } else {
+            image.onload = enableCropButton;
+        }
+        
+        function enableCropButton() {
+            cropBtn.disabled = false;
+        }
+        
+        // Initialize cropper when crop button is clicked
+        cropBtn.addEventListener('click', function() {
+            if (cropper) {
+                // If already in crop mode, cancel it
+                cropper.destroy();
+                cropper = null;
+                cropBtn.innerHTML = '<i class="bi bi-crop"></i> Crop';
+                cropBtn.classList.remove('active');
+                document.body.classList.remove('crop-active');
+                instructionEl.textContent = 'Crop mode canceled. Select an editing option.';
+                return;
+            }
+            
+            try {
+                // Enable crop mode
+                cropper = new Cropper(image, {
+                    viewMode: 2, // Restrict the crop box to the canvas
+                    dragMode: 'crop',
+                    aspectRatio: 4/5, // 4:5 portrait aspect ratio
+                    autoCropArea: 0.8,
+                    restore: false,
+                    guides: true,
+                    center: true,
+                    highlight: true,
+                    cropBoxMovable: true,
+                    cropBoxResizable: true,
+                    background: true,
+                    modal: true,
+                    zoomable: false, // Disable zooming to prevent issues
+                    minCropBoxWidth: 50,
+                    minCropBoxHeight: 62.5, // Maintains 4:5 ratio (50 * 5/4)
+                    ready: function() {
+                        // Center the crop box and enforce 4:5 aspect ratio
+                        const canvasData = cropper.getCanvasData();
+                        const cropBoxWidth = canvasData.width * 0.8;
+                        const cropBoxHeight = cropBoxWidth * (5/4); // 4:5 ratio
+                        
+                        // Make sure the crop box fits within the canvas
+                        const maxHeight = canvasData.height * 0.9;
+                        const adjustedHeight = Math.min(cropBoxHeight, maxHeight);
+                        const adjustedWidth = adjustedHeight * (4/5); // Maintain ratio
+                        
+                        const initialCrop = {
+                            left: canvasData.left + (canvasData.width - adjustedWidth) / 2,
+                            top: canvasData.top + (canvasData.height - adjustedHeight) / 2,
+                            width: adjustedWidth,
+                            height: adjustedHeight
+                        };
+                        cropper.setCropBoxData(initialCrop);
+                    }
+                });
+                
+                cropBtn.innerHTML = '<i class="bi bi-x-lg"></i> Cancel Crop';
+                cropBtn.classList.add('active');
+                document.body.classList.add('crop-active');
+                instructionEl.textContent = 'Drag or resize the crop area, then click "Apply Crop" when ready.';
+            } catch (error) {
+                console.error('Error initializing cropper:', error);
+                instructionEl.textContent = 'Error initializing crop tool. Please try again.';
+                instructionEl.classList.remove('alert-info');
+                instructionEl.classList.add('alert-danger');
+            }
+        });
+        
+        // Apply crop when the apply button is clicked
+        applyCropBtn.addEventListener('click', function() {
+            if (!cropper) return;
+            
+            try {
+                const cropData = cropper.getData();
+                
+                // Validate crop data
+                if (cropData.width < 10 || cropData.height < 10) {
+                    instructionEl.textContent = 'Crop area too small. Please select a larger area.';
+                    instructionEl.classList.remove('alert-info');
+                    instructionEl.classList.add('alert-warning');
+                    return;
+                }
+                
+                // Show loader and disable toolbar
+                loaderEl.style.display = 'block';
+                toolbarEl.style.pointerEvents = 'none';
+                instructionEl.textContent = 'Processing your image...';
+                
+                // Send crop data to the server
+                fetch('{% url "image_editor:crop_image" image.id %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        x: Math.round(cropData.x),
+                        y: Math.round(cropData.y),
+                        width: Math.round(cropData.width),
+                        height: Math.round(cropData.height)
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Destroy cropper
+                        cropper.destroy();
+                        cropper = null;
+                        
+                        // Update image with the new cropped version
+                        image.src = data.imageUrl + '?t=' + new Date().getTime(); // Add timestamp to prevent caching
+                        
+                        // Reset UI
+                        cropBtn.innerHTML = '<i class="bi bi-crop"></i> Crop';
+                        cropBtn.classList.remove('active');
+                        document.body.classList.remove('crop-active');
+                        instructionEl.textContent = 'Image successfully cropped. Select another editing option.';
+                        instructionEl.classList.remove('alert-warning', 'alert-danger');
+                        instructionEl.classList.add('alert-info');
+                    } else {
+                        throw new Error(data.error || 'Failed to crop image');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    instructionEl.textContent = 'Error: ' + error.message;
+                    instructionEl.classList.remove('alert-info');
+                    instructionEl.classList.add('alert-danger');
+                })
+                .finally(() => {
+                    // Hide loader and enable toolbar
+                    loaderEl.style.display = 'none';
+                    toolbarEl.style.pointerEvents = 'auto';
+                });
+            } catch (error) {
+                console.error('Error getting crop data:', error);
+                instructionEl.textContent = 'Error processing crop. Please try again.';
+                instructionEl.classList.remove('alert-info');
+                instructionEl.classList.add('alert-danger');
+            }
+        });
+        
+        // Rotate image left
+        rotateLeftBtn.addEventListener('click', function() {
+            rotateImage('left');
+        });
+        
+        // Rotate image right
+        rotateRightBtn.addEventListener('click', function() {
+            rotateImage('right');
+        });
+        
+        // Function to handle image rotation
+        function rotateImage(direction) {
+            // If in crop mode, cancel it
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+                cropBtn.innerHTML = '<i class="bi bi-crop"></i> Crop';
+                cropBtn.classList.remove('active');
+                document.body.classList.remove('crop-active');
+            }
+            
+            // Show loader and disable toolbar
+            loaderEl.style.display = 'block';
+            toolbarEl.style.pointerEvents = 'none';
+            instructionEl.textContent = 'Rotating your image...';
+            instructionEl.classList.remove('alert-danger', 'alert-warning');
+            instructionEl.classList.add('alert-info');
+            
+            // Send rotation request to the server
+            fetch('{% url "image_editor:rotate_image" image.id %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    direction: direction
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Update image with the rotated version
+                    image.src = data.imageUrl + '?t=' + new Date().getTime(); // Add timestamp to prevent caching
+                    instructionEl.textContent = 'Image successfully rotated. Select another editing option.';
+                } else {
+                    throw new Error(data.error || 'Failed to rotate image');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                instructionEl.textContent = 'Error: ' + error.message;
+                instructionEl.classList.remove('alert-info');
+                instructionEl.classList.add('alert-danger');
+            })
+            .finally(() => {
+                // Hide loader and enable toolbar
+                loaderEl.style.display = 'none';
+                toolbarEl.style.pointerEvents = 'auto';
+            });
+        }
+    });
+</script>
+{% endblock %} 

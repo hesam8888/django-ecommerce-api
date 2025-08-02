@@ -1,0 +1,249 @@
+{% extends 'shop/base.html' %}
+{% load static %}
+
+{% block title %}محصولات{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">فهرست محصولات</h2>
+            
+            <!-- Filters -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <form method="get" class="d-flex">
+                        <input type="text" name="search" class="form-control" placeholder="جستجو در محصولات..." value="{{ search_query }}">
+                        <button type="submit" class="btn btn-primary ms-2">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                </div>
+                <div class="col-md-6">
+                    <form method="get" class="d-flex">
+                        <select name="category" class="form-select" onchange="this.form.submit()">
+                            <option value="">همه دسته‌بندی‌ها</option>
+                            {% for category in categories %}
+                                <option value="{{ category.id }}" {% if current_category == category.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ category.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        {% if user.is_authenticated %}
+                            <a href="{% url 'shop:wishlist' %}" class="btn btn-outline-danger ms-2">
+                                <i class="fas fa-heart"></i> لیست علاقه‌مندی
+                            </a>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Products -->
+            {% if products %}
+                <div class="row">
+                    {% for product in products %}
+                        <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                            <div class="card h-100 product-card" data-product-id="{{ product.id }}">
+                                <div class="position-relative">
+                                    {% if product.images.all %}
+                                        {% for image in product.images.all %}
+                                            {% if image.is_primary %}
+                                                <img src="{{ image.image.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
+                                                {% break %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                            <i class="fas fa-image text-muted fa-3x"></i>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- Wishlist button -->
+                                    {% if user.is_authenticated %}
+                                        <button class="btn btn-link position-absolute top-0 end-0 m-2 wishlist-btn" 
+                                                data-product-id="{{ product.id }}"
+                                                data-in-wishlist="{% if product.is_in_wishlist %}true{% else %}false{% endif %}">
+                                            <i class="fas fa-heart {% if product.is_in_wishlist %}text-danger{% else %}text-muted{% endif %}"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="card-body d-flex flex-column">
+                                    <h5 class="card-title">{{ product.name }}</h5>
+                                    <p class="card-text text-muted small">{{ product.category.name }}</p>
+                                    
+                                    {% if product.description %}
+                                        <p class="card-text">{{ product.description|truncatewords:15 }}</p>
+                                    {% endif %}
+                                    
+                                    <div class="mt-auto">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <span class="h5 text-primary mb-0">{{ product.get_formatted_toman_price }}</span>
+                                            {% if product.price_usd %}
+                                                <span class="text-muted small">{{ product.get_formatted_usd_price }}</span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <button class="btn btn-primary w-100">
+                                            <i class="fas fa-shopping-cart"></i> افزودن به سبد
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if products.has_other_pages %}
+                    <nav aria-label="Product pagination" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if products.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ products.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}">قبلی</a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for num in products.paginator.page_range %}
+                                {% if products.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if products.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ products.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}">بعدی</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+                
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-box-open fa-5x text-muted mb-4"></i>
+                    <h3 class="text-muted">محصولی یافت نشد</h3>
+                    <p class="text-muted mb-4">
+                        {% if search_query %}
+                            نتیجه‌ای برای "{{ search_query }}" یافت نشد
+                        {% else %}
+                            در حال حاضر محصولی موجود نیست
+                        {% endif %}
+                    </p>
+                    {% if search_query or current_category %}
+                        <a href="{% url 'shop:product_list_with_wishlist' %}" class="btn btn-primary">
+                            مشاهده همه محصولات
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Toast for notifications -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="wishlist-toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i class="fas fa-heart text-danger me-2"></i>
+            <strong class="me-auto">لیست علاقه‌مندی</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body" id="toast-message">
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Wishlist toggle functionality
+    $('.wishlist-btn').on('click', function() {
+        {% if user.is_authenticated %}
+            const productId = $(this).data('product-id');
+            const button = $(this);
+            const heartIcon = button.find('i');
+            const isInWishlist = button.data('in-wishlist');
+            
+            // Show loading state
+            heartIcon.removeClass('fa-heart').addClass('fa-spinner fa-spin');
+            button.prop('disabled', true);
+            
+            // Determine URL based on current state
+            const url = isInWishlist ? 
+                '{% url "shop:remove_from_wishlist" %}' : 
+                '{% url "shop:add_to_wishlist" %}';
+            
+            // Send AJAX request
+            $.ajax({
+                url: url,
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val(),
+                    'Content-Type': 'application/json'
+                },
+                data: JSON.stringify({
+                    'product_id': productId
+                }),
+                success: function(response) {
+                    if (response.success) {
+                        // Toggle wishlist state
+                        const newState = !isInWishlist;
+                        button.data('in-wishlist', newState);
+                        
+                        // Update heart icon
+                        if (newState) {
+                            heartIcon.removeClass('text-muted').addClass('text-danger');
+                        } else {
+                            heartIcon.removeClass('text-danger').addClass('text-muted');
+                        }
+                        
+                        // Show success toast
+                        showToast(response.message, 'success');
+                    } else {
+                        showToast('خطا در انجام عملیات', 'error');
+                    }
+                },
+                error: function() {
+                    showToast('خطا در ارتباط با سرور', 'error');
+                },
+                complete: function() {
+                    // Reset button state
+                    heartIcon.removeClass('fa-spinner fa-spin').addClass('fa-heart');
+                    button.prop('disabled', false);
+                }
+            });
+        {% else %}
+            // Redirect to login for non-authenticated users
+            window.location.href = '{% url "accounts:login" %}';
+        {% endif %}
+    });
+    
+    // Function to show toast notifications
+    function showToast(message, type) {
+        const toast = $('#wishlist-toast');
+        const toastBody = $('#toast-message');
+        
+        toastBody.text(message);
+        
+        // Change toast color based on type
+        if (type === 'success') {
+            toast.removeClass('bg-danger').addClass('bg-success text-white');
+        } else {
+            toast.removeClass('bg-success').addClass('bg-danger text-white');
+        }
+        
+        // Show toast
+        const bsToast = new bootstrap.Toast(toast[0]);
+        bsToast.show();
+    }
+});
+</script>
+{% endblock %} 

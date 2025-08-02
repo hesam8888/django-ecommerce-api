@@ -1,0 +1,127 @@
+CREATE TABLE IF NOT EXISTS "django_migrations" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "app" varchar(255) NOT NULL, "name" varchar(255) NOT NULL, "applied" datetime NOT NULL);
+CREATE TABLE sqlite_sequence(name,seq);
+CREATE TABLE IF NOT EXISTS "django_content_type" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "app_label" varchar(100) NOT NULL, "model" varchar(100) NOT NULL);
+CREATE UNIQUE INDEX "django_content_type_app_label_model_76bd3d3b_uniq" ON "django_content_type" ("app_label", "model");
+CREATE TABLE IF NOT EXISTS "auth_group_permissions" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "group_id" integer NOT NULL REFERENCES "auth_group" ("id") DEFERRABLE INITIALLY DEFERRED, "permission_id" integer NOT NULL REFERENCES "auth_permission" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE UNIQUE INDEX "auth_group_permissions_group_id_permission_id_0cd325b0_uniq" ON "auth_group_permissions" ("group_id", "permission_id");
+CREATE INDEX "auth_group_permissions_group_id_b120cbf9" ON "auth_group_permissions" ("group_id");
+CREATE INDEX "auth_group_permissions_permission_id_84c5c92e" ON "auth_group_permissions" ("permission_id");
+CREATE TABLE IF NOT EXISTS "auth_permission" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "content_type_id" integer NOT NULL REFERENCES "django_content_type" ("id") DEFERRABLE INITIALLY DEFERRED, "codename" varchar(100) NOT NULL, "name" varchar(255) NOT NULL);
+CREATE UNIQUE INDEX "auth_permission_content_type_id_codename_01ab375a_uniq" ON "auth_permission" ("content_type_id", "codename");
+CREATE INDEX "auth_permission_content_type_id_2f476e4b" ON "auth_permission" ("content_type_id");
+CREATE TABLE IF NOT EXISTS "auth_group" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "name" varchar(150) NOT NULL UNIQUE);
+CREATE TABLE IF NOT EXISTS "suppliers_user" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "password" varchar(128) NOT NULL, "last_login" datetime NULL, "is_superuser" bool NOT NULL, "username" varchar(150) NOT NULL UNIQUE, "first_name" varchar(150) NOT NULL, "last_name" varchar(150) NOT NULL, "email" varchar(254) NOT NULL, "is_staff" bool NOT NULL, "is_active" bool NOT NULL, "date_joined" datetime NOT NULL, "is_supplier" bool NOT NULL, "phone_number" varchar(15) NOT NULL, "address" text NOT NULL, "password_reset_sent_at" datetime NULL, "password_reset_token" varchar(100) NULL);
+CREATE TABLE IF NOT EXISTS "suppliers_user_groups" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "user_id" bigint NOT NULL REFERENCES "suppliers_user" ("id") DEFERRABLE INITIALLY DEFERRED, "group_id" integer NOT NULL REFERENCES "auth_group" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE TABLE IF NOT EXISTS "suppliers_user_user_permissions" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "user_id" bigint NOT NULL REFERENCES "suppliers_user" ("id") DEFERRABLE INITIALLY DEFERRED, "permission_id" integer NOT NULL REFERENCES "auth_permission" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE TABLE IF NOT EXISTS "suppliers_store" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "name" varchar(100) NOT NULL, "address" text NULL, "is_active" bool NOT NULL, "created_at" datetime NOT NULL, "supplier_id" bigint NOT NULL REFERENCES "suppliers_supplier" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE TABLE IF NOT EXISTS "suppliers_supplierinvitation" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "email" varchar(254) NOT NULL, "store_username" varchar(100) NULL UNIQUE, "token" varchar(100) NOT NULL UNIQUE, "created_at" datetime NOT NULL, "expires_at" datetime NOT NULL, "is_used" bool NOT NULL, "email_sent" bool NOT NULL, "status" varchar(20) NOT NULL, "store_name" varchar(100) NULL, "owner_first_name" varchar(50) NULL, "owner_last_name" varchar(50) NULL, "phone_number" varchar(20) NULL, "address" text NULL, "supplier_id" bigint NULL REFERENCES "suppliers_supplier" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE UNIQUE INDEX "suppliers_user_groups_user_id_group_id_898020b1_uniq" ON "suppliers_user_groups" ("user_id", "group_id");
+CREATE INDEX "suppliers_user_groups_user_id_cba65f68" ON "suppliers_user_groups" ("user_id");
+CREATE INDEX "suppliers_user_groups_group_id_ba64a409" ON "suppliers_user_groups" ("group_id");
+CREATE UNIQUE INDEX "suppliers_user_user_permissions_user_id_permission_id_b44159c4_uniq" ON "suppliers_user_user_permissions" ("user_id", "permission_id");
+CREATE INDEX "suppliers_user_user_permissions_user_id_194af2a1" ON "suppliers_user_user_permissions" ("user_id");
+CREATE INDEX "suppliers_user_user_permissions_permission_id_187a6264" ON "suppliers_user_user_permissions" ("permission_id");
+CREATE INDEX "suppliers_store_supplier_id_22203fd3" ON "suppliers_store" ("supplier_id");
+CREATE UNIQUE INDEX "unique_active_invitation" ON "suppliers_supplierinvitation" ("email") WHERE (NOT "is_used" AND "status" = 'pending');
+CREATE INDEX "suppliers_supplierinvitation_supplier_id_953c547d" ON "suppliers_supplierinvitation" ("supplier_id");
+CREATE TABLE IF NOT EXISTS "django_admin_log" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "object_id" text NULL, "object_repr" varchar(200) NOT NULL, "action_flag" smallint unsigned NOT NULL CHECK ("action_flag" >= 0), "change_message" text NOT NULL, "content_type_id" integer NULL REFERENCES "django_content_type" ("id") DEFERRABLE INITIALLY DEFERRED, "user_id" bigint NOT NULL REFERENCES "suppliers_user" ("id") DEFERRABLE INITIALLY DEFERRED, "action_time" datetime NOT NULL);
+CREATE INDEX "django_admin_log_content_type_id_c4bce8eb" ON "django_admin_log" ("content_type_id");
+CREATE INDEX "django_admin_log_user_id_c564eba6" ON "django_admin_log" ("user_id");
+CREATE TABLE IF NOT EXISTS "django_session" ("session_key" varchar(40) NOT NULL PRIMARY KEY, "session_data" text NOT NULL, "expire_date" datetime NOT NULL);
+CREATE INDEX "django_session_expire_date_a5c62663" ON "django_session" ("expire_date");
+CREATE TABLE IF NOT EXISTS "shop_order" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "first_name" varchar(50) NOT NULL, "last_name" varchar(50) NOT NULL, "email" varchar(254) NOT NULL, "address" varchar(250) NOT NULL, "postal_code" varchar(20) NOT NULL, "city" varchar(100) NOT NULL, "created" datetime NOT NULL, "updated" datetime NOT NULL, "paid" bool NOT NULL);
+CREATE TABLE IF NOT EXISTS "shop_category" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "name" varchar(100) NOT NULL UNIQUE, "parent_id" bigint NULL REFERENCES "shop_category" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE TABLE IF NOT EXISTS "shop_categoryattribute" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "key" varchar(100) NOT NULL, "type" varchar(20) NOT NULL, "required" bool NOT NULL, "display_order" integer unsigned NOT NULL CHECK ("display_order" >= 0), "category_id" bigint NOT NULL REFERENCES "shop_category" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE TABLE IF NOT EXISTS "shop_product" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "name" varchar(100) NOT NULL, "price_toman" decimal NOT NULL, "price_usd" decimal NULL, "price" decimal NULL, "price_currency" varchar(5) NULL, "description" text NOT NULL, "is_active" bool NOT NULL, "created_at" datetime NOT NULL, "brand" varchar(100) NOT NULL, "model" varchar(100) NOT NULL, "sku" varchar(50) NOT NULL, "weight" decimal NULL, "dimensions" varchar(100) NOT NULL, "warranty" varchar(100) NOT NULL, "stock_quantity" integer unsigned NOT NULL CHECK ("stock_quantity" >= 0), "category_id" bigint NOT NULL REFERENCES "shop_category" ("id") DEFERRABLE INITIALLY DEFERRED, "supplier_id" bigint NULL REFERENCES "suppliers_supplier" ("id") DEFERRABLE INITIALLY DEFERRED, "brand_image" varchar(100) NULL);
+CREATE TABLE IF NOT EXISTS "shop_orderitem" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "price" decimal NOT NULL, "quantity" integer unsigned NOT NULL CHECK ("quantity" >= 0), "order_id" bigint NOT NULL REFERENCES "shop_order" ("id") DEFERRABLE INITIALLY DEFERRED, "product_id" bigint NOT NULL REFERENCES "shop_product" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE TABLE IF NOT EXISTS "shop_productattribute" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "key" varchar(100) NOT NULL, "value" varchar(255) NOT NULL, "product_id" bigint NOT NULL REFERENCES "shop_product" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE TABLE IF NOT EXISTS "shop_tag" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "name" varchar(100) NOT NULL UNIQUE, "slug" varchar(100) NOT NULL UNIQUE);
+CREATE TABLE IF NOT EXISTS "shop_tag_categories" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "tag_id" bigint NOT NULL REFERENCES "shop_tag" ("id") DEFERRABLE INITIALLY DEFERRED, "category_id" bigint NOT NULL REFERENCES "shop_category" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE TABLE IF NOT EXISTS "shop_product_tags" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "product_id" bigint NOT NULL REFERENCES "shop_product" ("id") DEFERRABLE INITIALLY DEFERRED, "tag_id" bigint NOT NULL REFERENCES "shop_tag" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE TABLE IF NOT EXISTS "shop_productimage" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "image" varchar(100) NOT NULL, "is_primary" bool NOT NULL, "order" integer unsigned NOT NULL CHECK ("order" >= 0), "created_at" datetime NOT NULL, "image_hash" varchar(64) NULL, "product_id" bigint NOT NULL REFERENCES "shop_product" ("id") DEFERRABLE INITIALLY DEFERRED, CONSTRAINT "unique_product_image_order" UNIQUE ("product_id", "order"));
+CREATE INDEX "shop_category_parent_id_901626c9" ON "shop_category" ("parent_id");
+CREATE UNIQUE INDEX "shop_categoryattribute_category_id_key_55e4b011_uniq" ON "shop_categoryattribute" ("category_id", "key");
+CREATE INDEX "shop_categoryattribute_category_id_e29bd5c9" ON "shop_categoryattribute" ("category_id");
+CREATE INDEX "shop_product_category_id_14d7eea8" ON "shop_product" ("category_id");
+CREATE INDEX "shop_product_supplier_id_57bed2a9" ON "shop_product" ("supplier_id");
+CREATE INDEX "shop_orderitem_order_id_2f1b00cf" ON "shop_orderitem" ("order_id");
+CREATE INDEX "shop_orderitem_product_id_48153f22" ON "shop_orderitem" ("product_id");
+CREATE INDEX "shop_productattribute_product_id_e769bc61" ON "shop_productattribute" ("product_id");
+CREATE UNIQUE INDEX "shop_tag_categories_tag_id_category_id_b17d6acb_uniq" ON "shop_tag_categories" ("tag_id", "category_id");
+CREATE INDEX "shop_tag_categories_tag_id_a03f3d28" ON "shop_tag_categories" ("tag_id");
+CREATE INDEX "shop_tag_categories_category_id_2cfde101" ON "shop_tag_categories" ("category_id");
+CREATE UNIQUE INDEX "shop_product_tags_product_id_tag_id_a244154e_uniq" ON "shop_product_tags" ("product_id", "tag_id");
+CREATE INDEX "shop_product_tags_product_id_9a158885" ON "shop_product_tags" ("product_id");
+CREATE INDEX "shop_product_tags_tag_id_dd30c4fb" ON "shop_product_tags" ("tag_id");
+CREATE INDEX "shop_productimage_product_id_65b3b20c" ON "shop_productimage" ("product_id");
+CREATE TABLE IF NOT EXISTS "image_editor_editedimage" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "original_image" varchar(100) NOT NULL, "edited_image" varchar(100) NULL, "upload_date" datetime NOT NULL);
+CREATE TABLE IF NOT EXISTS "account_emailconfirmation" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "created" datetime NOT NULL, "sent" datetime NULL, "key" varchar(64) NOT NULL UNIQUE, "email_address_id" integer NOT NULL REFERENCES "account_emailaddress" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE INDEX "account_emailconfirmation_email_address_id_5b7f8c58" ON "account_emailconfirmation" ("email_address_id");
+CREATE TABLE IF NOT EXISTS "django_site" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "name" varchar(50) NOT NULL, "domain" varchar(100) NOT NULL UNIQUE);
+CREATE TABLE IF NOT EXISTS "socialaccount_socialapp_sites" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "socialapp_id" integer NOT NULL REFERENCES "socialaccount_socialapp" ("id") DEFERRABLE INITIALLY DEFERRED, "site_id" integer NOT NULL REFERENCES "django_site" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE UNIQUE INDEX "socialaccount_socialapp_sites_socialapp_id_site_id_71a9a768_uniq" ON "socialaccount_socialapp_sites" ("socialapp_id", "site_id");
+CREATE INDEX "socialaccount_socialapp_sites_socialapp_id_97fb6e7d" ON "socialaccount_socialapp_sites" ("socialapp_id");
+CREATE INDEX "socialaccount_socialapp_sites_site_id_2579dee5" ON "socialaccount_socialapp_sites" ("site_id");
+CREATE TABLE IF NOT EXISTS "socialaccount_socialapp" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "provider" varchar(30) NOT NULL, "name" varchar(40) NOT NULL, "client_id" varchar(191) NOT NULL, "secret" varchar(191) NOT NULL, "key" varchar(191) NOT NULL, "provider_id" varchar(200) NOT NULL, "settings" text NOT NULL CHECK ((JSON_VALID("settings") OR "settings" IS NULL)));
+CREATE TABLE IF NOT EXISTS "socialaccount_socialtoken" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "token" text NOT NULL, "token_secret" text NOT NULL, "expires_at" datetime NULL, "account_id" integer NOT NULL REFERENCES "socialaccount_socialaccount" ("id") DEFERRABLE INITIALLY DEFERRED, "app_id" integer NULL REFERENCES "socialaccount_socialapp" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE UNIQUE INDEX "socialaccount_socialtoken_app_id_account_id_fca4e0ac_uniq" ON "socialaccount_socialtoken" ("app_id", "account_id");
+CREATE INDEX "socialaccount_socialtoken_account_id_951f210e" ON "socialaccount_socialtoken" ("account_id");
+CREATE INDEX "socialaccount_socialtoken_app_id_636a42d7" ON "socialaccount_socialtoken" ("app_id");
+CREATE TABLE IF NOT EXISTS "socialaccount_socialaccount" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "provider" varchar(200) NOT NULL, "uid" varchar(191) NOT NULL, "last_login" datetime NOT NULL, "date_joined" datetime NOT NULL, "user_id" bigint NOT NULL REFERENCES "suppliers_user" ("id") DEFERRABLE INITIALLY DEFERRED, "extra_data" text NOT NULL CHECK ((JSON_VALID("extra_data") OR "extra_data" IS NULL)));
+CREATE UNIQUE INDEX "socialaccount_socialaccount_provider_uid_fc810c6e_uniq" ON "socialaccount_socialaccount" ("provider", "uid");
+CREATE INDEX "socialaccount_socialaccount_user_id_8146e70c" ON "socialaccount_socialaccount" ("user_id");
+CREATE INDEX "product_name_gin_idx" ON "shop_product" ("name");
+CREATE TABLE IF NOT EXISTS "shop_attribute" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "name" varchar(100) NOT NULL UNIQUE, "key" varchar(100) NOT NULL UNIQUE, "type" varchar(20) NOT NULL, "description" text NOT NULL, "is_filterable" bool NOT NULL, "display_order" integer unsigned NOT NULL CHECK ("display_order" >= 0));
+CREATE TABLE IF NOT EXISTS "shop_newattributevalue" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "value" varchar(100) NOT NULL, "display_order" integer unsigned NOT NULL CHECK ("display_order" >= 0), "color_code" varchar(7) NULL, "attribute_id" bigint NOT NULL REFERENCES "shop_attribute" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE TABLE IF NOT EXISTS "shop_legacyattributevalue" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "value" varchar(100) NOT NULL, "display_order" integer unsigned NOT NULL CHECK ("display_order" >= 0), "attribute_id" bigint NOT NULL REFERENCES "shop_categoryattribute" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE TABLE IF NOT EXISTS "shop_subcategoryattribute" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "is_required" bool NOT NULL, "display_order" integer unsigned NOT NULL CHECK ("display_order" >= 0), "attribute_id" bigint NOT NULL REFERENCES "shop_attribute" ("id") DEFERRABLE INITIALLY DEFERRED, "subcategory_id" bigint NOT NULL REFERENCES "shop_category" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE TABLE IF NOT EXISTS "shop_productattributevalue" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "custom_value" varchar(255) NULL, "attribute_id" bigint NOT NULL REFERENCES "shop_attribute" ("id") DEFERRABLE INITIALLY DEFERRED, "attribute_value_id" bigint NULL REFERENCES "shop_newattributevalue" ("id") DEFERRABLE INITIALLY DEFERRED, "product_id" bigint NOT NULL REFERENCES "shop_product" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE UNIQUE INDEX "shop_newattributevalue_attribute_id_value_c1b6bad4_uniq" ON "shop_newattributevalue" ("attribute_id", "value");
+CREATE INDEX "shop_newattributevalue_attribute_id_4ea0b045" ON "shop_newattributevalue" ("attribute_id");
+CREATE UNIQUE INDEX "shop_legacyattributevalue_attribute_id_value_489384a5_uniq" ON "shop_legacyattributevalue" ("attribute_id", "value");
+CREATE INDEX "shop_legacyattributevalue_attribute_id_e16bb01d" ON "shop_legacyattributevalue" ("attribute_id");
+CREATE UNIQUE INDEX "shop_subcategoryattribute_subcategory_id_attribute_id_a2f35324_uniq" ON "shop_subcategoryattribute" ("subcategory_id", "attribute_id");
+CREATE INDEX "shop_subcategoryattribute_attribute_id_143f7e1b" ON "shop_subcategoryattribute" ("attribute_id");
+CREATE INDEX "shop_subcategoryattribute_subcategory_id_f8b3a403" ON "shop_subcategoryattribute" ("subcategory_id");
+CREATE UNIQUE INDEX "shop_productattributevalue_product_id_attribute_id_4f785b3e_uniq" ON "shop_productattributevalue" ("product_id", "attribute_id");
+CREATE INDEX "shop_productattributevalue_attribute_id_4476a0f9" ON "shop_productattributevalue" ("attribute_id");
+CREATE INDEX "shop_productattributevalue_attribute_value_id_f357ae70" ON "shop_productattributevalue" ("attribute_value_id");
+CREATE INDEX "shop_productattributevalue_product_id_6eb14a41" ON "shop_productattributevalue" ("product_id");
+CREATE TABLE IF NOT EXISTS "suppliers_backuplog" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "filename" varchar(255) NOT NULL, "status" varchar(20) NOT NULL, "started_at" datetime NOT NULL, "completed_at" datetime NULL, "file_size" bigint NULL, "error_message" text NULL, "backup_type" varchar(50) NOT NULL, "created_by_id" bigint NULL REFERENCES "suppliers_user" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE INDEX "suppliers_backuplog_created_by_id_339498d0" ON "suppliers_backuplog" ("created_by_id");
+CREATE TABLE IF NOT EXISTS "suppliers_deletedsupplier" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "original_id" integer NOT NULL, "name" varchar(100) NOT NULL, "email" varchar(254) NOT NULL, "phone" varchar(15) NOT NULL, "address" text NOT NULL, "description" text NOT NULL, "deleted_at" datetime NOT NULL, "deletion_reason" text NULL, "deleted_by_id" bigint NULL REFERENCES "suppliers_user" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE INDEX "suppliers_deletedsupplier_deleted_by_id_5cdc796b" ON "suppliers_deletedsupplier" ("deleted_by_id");
+CREATE TABLE IF NOT EXISTS "suppliers_supplier" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "name" varchar(100) NOT NULL, "email" varchar(254) NOT NULL UNIQUE, "phone" varchar(15) NOT NULL, "address" text NOT NULL, "description" text NOT NULL, "is_active" bool NOT NULL, "created_at" datetime NOT NULL, "updated_at" datetime NOT NULL, "user_id" bigint NOT NULL UNIQUE REFERENCES "suppliers_user" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE TABLE IF NOT EXISTS "suppliers_supplieradmin" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "role" varchar(50) NOT NULL, "is_active" bool NOT NULL, "created_at" datetime NOT NULL, "updated_at" datetime NOT NULL, "supplier_id" bigint NOT NULL REFERENCES "suppliers_supplier" ("id") DEFERRABLE INITIALLY DEFERRED, "user_id" bigint NOT NULL UNIQUE REFERENCES "suppliers_user" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE INDEX "suppliers_supplieradmin_supplier_id_3ad406fc" ON "suppliers_supplieradmin" ("supplier_id");
+CREATE TABLE accounts_address (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            label VARCHAR(50) NULL,
+            street_address VARCHAR(255) NOT NULL,
+            city VARCHAR(100) NOT NULL,
+            province VARCHAR(100) NULL,
+            pelak VARCHAR(20) NULL,
+            vahed VARCHAR(20) NULL,
+            country VARCHAR(100) NOT NULL DEFAULT 'ایران',
+            postal_code VARCHAR(20) NULL,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL,
+            customer_id INTEGER NOT NULL REFERENCES accounts_customer(id) ON DELETE CASCADE
+        );
+CREATE TABLE accounts_customer_groups (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            customer_id INTEGER NOT NULL REFERENCES accounts_customer(id) ON DELETE CASCADE,
+            group_id INTEGER NOT NULL REFERENCES auth_group(id)
+        );
+CREATE TABLE accounts_customer_user_permissions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            customer_id INTEGER NOT NULL REFERENCES accounts_customer(id) ON DELETE CASCADE,
+            permission_id INTEGER NOT NULL REFERENCES auth_permission(id)
+        );
+CREATE TABLE IF NOT EXISTS "accounts_customer" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "password" varchar(128) NOT NULL, "last_login" datetime NULL, "is_superuser" bool NOT NULL, "first_name" varchar(150) NOT NULL, "last_name" varchar(150) NOT NULL, "is_staff" bool NOT NULL, "is_active" bool NOT NULL, "date_joined" datetime NOT NULL, "email" varchar(254) NOT NULL UNIQUE, "phone_number" varchar(15) NOT NULL, "address" text NOT NULL, "date_of_birth" date NULL, "is_email_verified" bool NOT NULL, "email_verification_token" char(32) NOT NULL, "email_verification_sent_at" datetime NULL, "password_reset_token" char(32) NULL, "password_reset_sent_at" datetime NULL, "created_at" datetime NOT NULL, "updated_at" datetime NOT NULL, "username" varchar(150) NOT NULL UNIQUE, "city" varchar(100) NOT NULL, "country" varchar(100) NOT NULL, "postal_code" varchar(20) NOT NULL, "state" varchar(100) NOT NULL, "street_address" varchar(255) NOT NULL, "login_method" varchar(20) NOT NULL);
+CREATE TABLE IF NOT EXISTS "account_emailaddress" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "verified" bool NOT NULL, "primary" bool NOT NULL, "user_id" bigint NOT NULL REFERENCES "accounts_customer" ("id") DEFERRABLE INITIALLY DEFERRED, "email" varchar(254) NOT NULL);
+CREATE UNIQUE INDEX "account_emailaddress_user_id_email_987c8728_uniq" ON "account_emailaddress" ("user_id", "email");
+CREATE UNIQUE INDEX "unique_verified_email" ON "account_emailaddress" ("email") WHERE "verified";
+CREATE INDEX "account_emailaddress_user_id_2c513194" ON "account_emailaddress" ("user_id");
+CREATE INDEX "account_emailaddress_email_03be32b2" ON "account_emailaddress" ("email");
+CREATE UNIQUE INDEX "unique_primary_email" ON "account_emailaddress" ("user_id", "primary") WHERE "primary";

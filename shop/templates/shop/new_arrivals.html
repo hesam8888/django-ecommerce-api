@@ -1,0 +1,562 @@
+{% extends 'shop/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - فروشگاه آنلاین{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-0">
+                        <i class="fas fa-star text-warning me-2"></i>
+                        {{ title }}
+                    </h2>
+                    {% if user.is_staff %}
+                        <small class="text-muted">
+                            <i class="fas fa-shield-alt me-1"></i>مدیریت محصولات جدید
+                        </small>
+                    {% endif %}
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="badge bg-primary fs-6">{{ page_obj.paginator.count }} محصول</span>
+                    {% if user.is_staff %}
+                        <div class="btn-group">
+                            <a href="{% url 'shop:admin_new_arrivals' %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-table me-1"></i>پنل مدیریت جدید
+                            </a>
+                            <a href="{% url 'admin:shop_product_changelist' %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-cog me-1"></i>ادمین اصلی جنگو
+                            </a>
+                            <button class="btn btn-outline-warning btn-sm" id="toggle-admin-mode">
+                                <i class="fas fa-edit me-1"></i><span id="admin-mode-text">فعال کردن حالت ویرایش</span>
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if user.is_staff %}
+                <!-- Admin Warning Notice -->
+                <div class="alert alert-warning border-warning shadow-sm mb-3">
+                    <div class="d-flex align-items-start">
+                        <i class="fas fa-exclamation-triangle text-warning fs-4 me-3 mt-1"></i>
+                        <div>
+                            <h6 class="alert-heading mb-2">⚠️ توجه: مدیریت محصولات جدید</h6>
+                            <div class="row">
+                                <div class="col-12">
+                                    <p class="mb-1"><strong class="text-success">🟢 دکمه سبز "حذف از جدید":</strong></p>
+                                    <small>• محصول در سیستم باقی می‌ماند<br>• فقط از لیست محصولات جدید حذف می‌شود<br>• در صفحه محصولات اصلی قابل مشاهده است</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Admin Controls Panel -->
+                <div class="alert alert-info admin-controls" id="admin-controls" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong><i class="fas fa-tools me-2"></i>حالت مدیریت فعال</strong>
+                            <p class="mb-0 small">می‌توانید محصولات را از لیست محصولات جدید خارج کنید.</p>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn btn-outline-primary btn-sm" id="select-all-btn" onclick="toggleSelectAll()">
+                                <i class="fas fa-check-square me-1"></i><span id="select-all-text">انتخاب همه</span>
+                            </button>
+                            <button class="btn btn-outline-success btn-sm" onclick="bulkAction('keep_new_arrival')">
+                                <i class="fas fa-check me-1"></i>نگه داشتن انتخاب شده‌ها
+                            </button>
+                            <button class="btn btn-outline-success btn-sm fw-bold" onclick="bulkAction('remove_new_arrival')" title="محصولات در سیستم باقی می‌مانند - فقط از لیست جدید حذف می‌شوند">
+                                <i class="fas fa-star-half-alt me-1"></i>حذف از لیست جدید
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            <span id="selected-count">0</span> محصول انتخاب شده از <span id="total-products">{{ page_obj.paginator.count }}</span> محصول
+                        </small>
+                    </div>
+                </div>
+            {% endif %}
+            
+            {% if products %}
+                <div class="row">
+                    {% for product in products %}
+                        <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                            <div class="card h-100 shadow-sm product-card" data-product-id="{{ product.id }}">
+                                {% if user.is_staff %}
+                                    <input type="checkbox" class="form-check-input product-checkbox admin-only" 
+                                           data-product-id="{{ product.id }}" 
+                                           style="position: absolute; top: 10px; left: 10px; z-index: 10; display: none;">
+                                {% endif %}
+                                <div class="position-relative">
+                                    {% with product.images.all|first as primary_image %}
+                                        {% if primary_image %}
+                                            <img src="{{ primary_image.image.url }}" 
+                                                 class="card-img-top" 
+                                                 alt="{{ product.name }}"
+                                                 style="height: 200px; object-fit: cover;">
+                                        {% else %}
+                                            <div class="card-img-top d-flex align-items-center justify-content-center bg-light" 
+                                                 style="height: 200px;">
+                                                <i class="fas fa-image text-muted fa-3x"></i>
+                                            </div>
+                                        {% endif %}
+                                    {% endwith %}
+                                    <span class="badge bg-success position-absolute top-0 end-0 m-2">
+                                        <i class="fas fa-star me-1"></i>جدید
+                                    </span>
+                                    {% if user.is_staff %}
+                                        <div class="admin-actions admin-only" style="position: absolute; bottom: 5px; right: 5px; display: none;">
+                                            <div class="btn-group-vertical btn-group-sm" style="gap: 2px;">
+                                                <button class="btn btn-success btn-sm fw-bold" onclick="removeFromNewArrivals({{ product.id }})" title="فقط از لیست محصولات جدید حذف کن (محصول در سیستم باقی می‌ماند)" style="font-size: 10px; padding: 2px 6px;">
+                                                    <i class="fas fa-star-half-alt me-1"></i>حذف از جدید
+                                                </button>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="card-body d-flex flex-column">
+                                    <h5 class="card-title text-truncate">{{ product.name }}</h5>
+                                    <p class="card-text text-muted small mb-2">{{ product.category.name }}</p>
+                                    
+                                    {% if product.description %}
+                                        <p class="card-text text-muted small">
+                                            {{ product.description|truncatewords:15 }}
+                                        </p>
+                                    {% endif %}
+                                    
+                                    <div class="mt-auto">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div>
+                                                <strong class="text-primary">{{ product.get_formatted_toman_price }}</strong>
+                                                {% if product.price_usd %}
+                                                    <br><small class="text-muted">{{ product.get_formatted_usd_price }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                                            <a href="{% url 'shop:product_detail' product.id %}" 
+                                               class="btn btn-outline-primary btn-sm flex-fill">
+                                                <i class="fas fa-eye me-1"></i>مشاهده
+                                            </a>
+                                            <button class="btn btn-outline-danger btn-sm" 
+                                                    onclick="toggleWishlist({{ product.id }})">
+                                                <i class="fas fa-heart"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1">اول</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">قبلی</a>
+                                </li>
+                            {% endif %}
+                            
+                            <li class="page-item active">
+                                <span class="page-link">
+                                    صفحه {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}
+                                </span>
+                            </li>
+                            
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">بعدی</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">آخر</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+                
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-star fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">هیچ محصول جدیدی موجود نیست</h4>
+                    <p class="text-muted">در حال حاضر محصول جدیدی برای نمایش وجود ندارد.</p>
+                    <a href="{% url 'home' %}" class="btn btn-primary">
+                        <i class="fas fa-home me-2"></i>برگشت به صفحه اصلی
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.product-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+}
+
+.card-img-top {
+    transition: opacity 0.2s;
+}
+
+.product-card:hover .card-img-top {
+    opacity: 0.9;
+}
+
+/* Additional styles for admin mode */
+.admin-controls {
+    border-left: 4px solid #007bff;
+    background: linear-gradient(135deg, #e3f2fd 0%, #f8f9fa 100%);
+}
+
+.btn-outline-warning:hover {
+    background-color: #ffc107 !important;
+    border-color: #ffc107 !important;
+    color: #000 !important;
+}
+
+.btn-outline-danger:hover {
+    background-color: #dc3545 !important;
+    border-color: #dc3545 !important;
+    color: #fff !important;
+}
+
+/* Delete functionality removed - only new arrival management styles remain */
+
+.btn-outline-warning {
+    border-width: 1px;
+}
+
+/* Add visual indicators for better UX */
+.btn-group .btn:not(:first-child) {
+    margin-left: 2px;
+}
+
+.admin-controls .btn-group {
+    gap: 5px;
+}
+
+/* Improved admin action buttons */
+.admin-actions {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-radius: 8px !important;
+    padding: 4px !important;
+    backdrop-filter: blur(5px);
+    border: 2px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Make the success button (remove from new arrivals) more prominent */
+.admin-actions .btn-success {
+    background-color: #28a745 !important;
+    border-color: #28a745 !important;
+    color: white !important;
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+    font-weight: bold !important;
+}
+
+.admin-actions .btn-success:hover {
+    background-color: #218838 !important;
+    border-color: #1e7e34 !important;
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.4);
+}
+
+/* Danger button styles removed - delete functionality no longer available */
+
+/* Show admin actions on hover */
+.product-card:hover .admin-actions {
+    display: block !important;
+}
+
+/* Danger button animations and styles removed - delete functionality no longer available */
+
+/* Make safe buttons more prominent */
+.btn-outline-success:hover {
+    background-color: #28a745 !important;
+    border-color: #28a745 !important;
+    color: #fff !important;
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3) !important;
+}
+</style>
+
+<script>
+// Admin mode functionality
+let adminModeActive = false;
+let selectedProducts = new Set();
+
+function toggleWishlist(productId) {
+    // Wishlist functionality - implement based on your existing wishlist code
+    console.log('Toggle wishlist for product:', productId);
+}
+
+// Toggle admin mode
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleBtn = document.getElementById('toggle-admin-mode');
+    const adminControls = document.getElementById('admin-controls');
+    const adminModeText = document.getElementById('admin-mode-text');
+    
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+            adminModeActive = !adminModeActive;
+            
+            if (adminModeActive) {
+                // Show admin controls
+                adminControls.style.display = 'block';
+                adminModeText.textContent = 'غیرفعال کردن حالت ویرایش';
+                toggleBtn.classList.remove('btn-outline-warning');
+                toggleBtn.classList.add('btn-warning');
+                
+                // Show checkboxes and admin actions
+                document.querySelectorAll('.admin-only').forEach(el => {
+                    el.style.display = 'block';
+                });
+                
+                // Add event listeners to checkboxes
+                document.querySelectorAll('.product-checkbox').forEach(checkbox => {
+                    checkbox.addEventListener('change', updateSelectedCount);
+                });
+                
+                // Initialize select all button state
+                updateSelectAllButton();
+                
+            } else {
+                // Hide admin controls
+                adminControls.style.display = 'none';
+                adminModeText.textContent = 'فعال کردن حالت ویرایش';
+                toggleBtn.classList.remove('btn-warning');
+                toggleBtn.classList.add('btn-outline-warning');
+                
+                // Hide checkboxes and admin actions
+                document.querySelectorAll('.admin-only').forEach(el => {
+                    el.style.display = 'none';
+                });
+                
+                // Clear selections
+                selectedProducts.clear();
+                document.querySelectorAll('.product-checkbox').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                updateSelectedCount();
+                updateSelectAllButton();
+            }
+        });
+    }
+});
+
+function updateSelectedCount() {
+    selectedProducts.clear();
+    document.querySelectorAll('.product-checkbox:checked').forEach(checkbox => {
+        selectedProducts.add(checkbox.dataset.productId);
+    });
+    
+    const countElement = document.getElementById('selected-count');
+    if (countElement) {
+        countElement.textContent = selectedProducts.size;
+    }
+    
+    // Update select all button state
+    updateSelectAllButton();
+}
+
+// Toggle select all functionality
+function toggleSelectAll() {
+    const checkboxes = document.querySelectorAll('.product-checkbox');
+    const selectAllBtn = document.getElementById('select-all-btn');
+    const selectAllText = document.getElementById('select-all-text');
+    const selectAllIcon = selectAllBtn.querySelector('i');
+    
+    // Check if all checkboxes are currently selected
+    const allSelected = Array.from(checkboxes).every(checkbox => checkbox.checked);
+    
+    if (allSelected) {
+        // Deselect all
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        selectAllText.textContent = 'انتخاب همه';
+        selectAllIcon.className = 'fas fa-check-square me-1';
+        selectAllBtn.classList.remove('btn-primary');
+        selectAllBtn.classList.add('btn-outline-primary');
+    } else {
+        // Select all
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        selectAllText.textContent = 'لغو انتخاب همه';
+        selectAllIcon.className = 'fas fa-minus-square me-1';
+        selectAllBtn.classList.remove('btn-outline-primary');
+        selectAllBtn.classList.add('btn-primary');
+    }
+    
+    updateSelectedCount();
+}
+
+// Update select all button state based on current selections
+function updateSelectAllButton() {
+    const checkboxes = document.querySelectorAll('.product-checkbox');
+    const checkedCheckboxes = document.querySelectorAll('.product-checkbox:checked');
+    const selectAllBtn = document.getElementById('select-all-btn');
+    const selectAllText = document.getElementById('select-all-text');
+    const selectAllIcon = selectAllBtn.querySelector('i');
+    
+    if (!selectAllBtn) return; // Button not available (not in admin mode)
+    
+    if (checkedCheckboxes.length === 0) {
+        // Nothing selected
+        selectAllText.textContent = 'انتخاب همه';
+        selectAllIcon.className = 'fas fa-check-square me-1';
+        selectAllBtn.classList.remove('btn-primary');
+        selectAllBtn.classList.add('btn-outline-primary');
+    } else if (checkedCheckboxes.length === checkboxes.length) {
+        // All selected
+        selectAllText.textContent = 'لغو انتخاب همه';
+        selectAllIcon.className = 'fas fa-minus-square me-1';
+        selectAllBtn.classList.remove('btn-outline-primary');
+        selectAllBtn.classList.add('btn-primary');
+    } else {
+        // Some selected
+        selectAllText.textContent = 'انتخاب همه';
+        selectAllIcon.className = 'fas fa-check-square me-1';
+        selectAllBtn.classList.remove('btn-primary');
+        selectAllBtn.classList.add('btn-outline-primary');
+    }
+}
+
+// Individual product actions
+function removeFromNewArrivals(productId) {
+    if (!confirm('✅ حذف از لیست محصولات جدید\n\nآیا مطمئن هستید که می‌خواهید این محصول را از لیست "محصولات جدید" حذف کنید؟\n\n✅ محصول در سیستم باقی می‌ماند\n✅ فقط از بخش محصولات جدید حذف می‌شود\n✅ در صفحه محصولات اصلی قابل مشاهده است')) {
+        return;
+    }
+    
+    performAction('remove_new_arrival', [productId]);
+}
+
+// Delete functionality removed - only new arrival management allowed
+
+// Bulk actions
+function bulkAction(action) {
+    if (selectedProducts.size === 0) {
+        alert('لطفاً حداقل یک محصول انتخاب کنید.');
+        return;
+    }
+    
+    const productIds = Array.from(selectedProducts);
+    let confirmMessage = '';
+    
+    switch(action) {
+        case 'keep_new_arrival':
+            confirmMessage = `آیا مطمئن هستید که می‌خواهید ${productIds.length} محصول انتخاب شده را در لیست محصولات جدید نگه دارید؟`;
+            break;
+        case 'remove_new_arrival':
+            confirmMessage = `✅ حذف ${productIds.length} محصول از لیست جدید\n\nآیا مطمئن هستید که می‌خواهید این محصولات را از لیست "محصولات جدید" حذف کنید؟\n\n✅ محصولات در سیستم باقی می‌مانند\n✅ فقط از بخش "محصولات جدید" حذف می‌شوند\n✅ در صفحه محصولات اصلی قابل مشاهده هستند`;
+            break;
+    }
+    
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    performAction(action, productIds);
+}
+
+// Perform AJAX action
+function performAction(action, productIds) {
+    const formData = new FormData();
+    formData.append('action', action);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    
+    productIds.forEach(id => {
+        formData.append('product_ids', id);
+    });
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            showMessage(data.message, 'success');
+            
+            // Remove products from display when removed from new arrivals
+            if (action === 'remove_new_arrival') {
+                // Remove products from display
+                productIds.forEach(id => {
+                    const productCard = document.querySelector(`[data-product-id="${id}"]`);
+                    if (productCard) {
+                        productCard.closest('.col-lg-3').remove();
+                    }
+                });
+                
+                // Update count
+                const countBadge = document.querySelector('.badge.bg-primary');
+                if (countBadge) {
+                    const currentCount = parseInt(countBadge.textContent);
+                    countBadge.textContent = (currentCount - productIds.length) + ' محصول';
+                }
+            }
+            
+            // Clear selections
+            selectedProducts.clear();
+            updateSelectedCount();
+            updateSelectAllButton();
+            
+        } else {
+            showMessage(data.message || 'خطایی رخ داد', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('خطایی در ارتباط با سرور رخ داد', 'error');
+    });
+}
+
+// Show message function
+function showMessage(message, type) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const alertHtml = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    const container = document.querySelector('.container');
+    container.insertAdjacentHTML('afterbegin', alertHtml);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        const alert = container.querySelector('.alert');
+        if (alert) {
+            alert.remove();
+        }
+    }, 5000);
+}
+
+// Add keyboard shortcut for select all (Ctrl+A)
+document.addEventListener('keydown', function(e) {
+    if (adminModeActive && (e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault();
+        toggleSelectAll();
+    }
+});
+</script>
+{% endblock %} 

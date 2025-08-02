@@ -1,0 +1,49 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sort Product Images</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+</head>
+<body>
+    <h1>Sort Product Images</h1>
+    <ul id="sortable-list">
+        {% for image in images %}
+        <li data-id="{{ image.id }}">
+            <img src="{{ image.image.url }}" alt="" style="width: 150px;" />
+            {{ image.image.name }}
+        </li>
+        {% endfor %}
+    </ul>
+
+    <button id="save-order">Save Order</button>
+
+    <script>
+        const sortable = new Sortable(document.getElementById('sortable-list'), {
+            animation: 150
+        });
+
+        document.getElementById('save-order').addEventListener('click', function () {
+            const imageIds = Array.from(document.querySelectorAll('#sortable-list li'))
+                                  .map(el => el.dataset.id);
+
+            fetch("{% url 'reorder_images' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+                body: JSON.stringify({ image_ids: imageIds })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Order saved!');
+                } else {
+                    alert('Error saving order');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

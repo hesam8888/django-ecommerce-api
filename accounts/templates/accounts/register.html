@@ -1,0 +1,178 @@
+{% extends 'accounts/base_auth.html' %}
+
+{% block title %}Register{% endblock %}
+
+{% block header %}
+<h1>Create Account</h1>
+<p>Join our community and start shopping!</p>
+{% endblock %}
+
+{% block content %}
+<form method="post" novalidate>
+    {% csrf_token %}
+    
+    <div class="form-group">
+        <label for="{{ form.email.id_for_label }}">Email</label>
+        {{ form.email }}
+        {% if form.email.errors %}
+            <div class="invalid-feedback d-block">
+                {{ form.email.errors }}
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group">
+                <label for="{{ form.first_name.id_for_label }}">First Name</label>
+                {{ form.first_name }}
+                {% if form.first_name.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.first_name.errors }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="form-group">
+                <label for="{{ form.last_name.id_for_label }}">Last Name</label>
+                {{ form.last_name }}
+                {% if form.last_name.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.last_name.errors }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="form-group">
+        <label for="{{ form.phone_number.id_for_label }}">Phone Number</label>
+        {{ form.phone_number }}
+        {% if form.phone_number.errors %}
+            <div class="invalid-feedback d-block">
+                {{ form.phone_number.errors }}
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="form-group">
+        <label for="{{ form.date_of_birth.id_for_label }}">Date of Birth</label>
+        {{ form.date_of_birth }}
+        {% if form.date_of_birth.errors %}
+            <div class="invalid-feedback d-block">
+                {{ form.date_of_birth.errors }}
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="form-group">
+        <label for="{{ form.password1.id_for_label }}">Password</label>
+        {{ form.password1 }}
+        {% if form.password1.errors %}
+            <div class="invalid-feedback d-block">
+                {{ form.password1.errors }}
+            </div>
+        {% endif %}
+        <div class="password-requirements">
+            <ul>
+                <li id="length"><i class="fas fa-times"></i> At least 8 characters</li>
+                <li id="uppercase"><i class="fas fa-times"></i> One uppercase letter</li>
+                <li id="lowercase"><i class="fas fa-times"></i> One lowercase letter</li>
+                <li id="number"><i class="fas fa-times"></i> One number</li>
+                <li id="special"><i class="fas fa-times"></i> One special character</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="form-group">
+        <label for="{{ form.password2.id_for_label }}">Confirm Password</label>
+        {{ form.password2 }}
+        {% if form.password2.errors %}
+            <div class="invalid-feedback d-block">
+                {{ form.password2.errors }}
+            </div>
+        {% endif %}
+    </div>
+    
+    <button type="submit" class="btn btn-primary w-100">Create Account</button>
+</form>
+{% endblock %}
+
+{% block footer %}
+<p>Already have an account? <a href="{% url 'accounts:login' %}">Sign In</a></p>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const password = document.querySelector('#{{ form.password1.id_for_label }}');
+    const requirements = {
+        length: document.querySelector('#length'),
+        uppercase: document.querySelector('#uppercase'),
+        lowercase: document.querySelector('#lowercase'),
+        number: document.querySelector('#number'),
+        special: document.querySelector('#special')
+    };
+    
+    password.addEventListener('input', function() {
+        const value = this.value;
+        
+        // Check length
+        if (value.length >= 8) {
+            requirements.length.classList.add('valid');
+            requirements.length.classList.remove('invalid');
+            requirements.length.querySelector('i').className = 'fas fa-check';
+        } else {
+            requirements.length.classList.add('invalid');
+            requirements.length.classList.remove('valid');
+            requirements.length.querySelector('i').className = 'fas fa-times';
+        }
+        
+        // Check uppercase
+        if (/[A-Z]/.test(value)) {
+            requirements.uppercase.classList.add('valid');
+            requirements.uppercase.classList.remove('invalid');
+            requirements.uppercase.querySelector('i').className = 'fas fa-check';
+        } else {
+            requirements.uppercase.classList.add('invalid');
+            requirements.uppercase.classList.remove('valid');
+            requirements.uppercase.querySelector('i').className = 'fas fa-times';
+        }
+        
+        // Check lowercase
+        if (/[a-z]/.test(value)) {
+            requirements.lowercase.classList.add('valid');
+            requirements.lowercase.classList.remove('invalid');
+            requirements.lowercase.querySelector('i').className = 'fas fa-check';
+        } else {
+            requirements.lowercase.classList.add('invalid');
+            requirements.lowercase.classList.remove('valid');
+            requirements.lowercase.querySelector('i').className = 'fas fa-times';
+        }
+        
+        // Check number
+        if (/\d/.test(value)) {
+            requirements.number.classList.add('valid');
+            requirements.number.classList.remove('invalid');
+            requirements.number.querySelector('i').className = 'fas fa-check';
+        } else {
+            requirements.number.classList.add('invalid');
+            requirements.number.classList.remove('valid');
+            requirements.number.querySelector('i').className = 'fas fa-times';
+        }
+        
+        // Check special character
+        if (/[!@#$%^&*(),.?":{}|<>]/.test(value)) {
+            requirements.special.classList.add('valid');
+            requirements.special.classList.remove('invalid');
+            requirements.special.querySelector('i').className = 'fas fa-check';
+        } else {
+            requirements.special.classList.add('invalid');
+            requirements.special.classList.remove('valid');
+            requirements.special.querySelector('i').className = 'fas fa-times';
+        }
+    });
+});
+</script>
+{% endblock %} 

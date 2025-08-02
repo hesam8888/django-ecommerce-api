@@ -1,0 +1,60 @@
+{% extends "suppliers/base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Registration Successful" %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .success-icon {
+        text-align: center;
+        margin: 2rem 0;
+        font-size: 4rem;
+        color: #28a745;
+    }
+    .account-details {
+        background-color: #f8f9fa;
+        border-radius: 0.25rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h1 class="h3 mb-0">{% trans "Registration Successful" %}</h1>
+                </div>
+                
+                <div class="card-body">
+                    <div class="alert alert-success">
+                        <p class="mb-0">{% trans "Your supplier account has been successfully created." %}</p>
+                    </div>
+                    
+                    <div class="success-icon">
+                        <i class="bi bi-check-circle-fill">✓</i>
+                    </div>
+                    
+                    <div class="account-details">
+                        <h3 class="h4 mb-3">{% trans "Your account details" %}</h3>
+                        <ul class="list-group">
+                            <li class="list-group-item"><strong>{% trans "Username" %}:</strong> {{ user.username }}</li>
+                            <li class="list-group-item"><strong>{% trans "Email" %}:</strong> {{ user.email }}</li>
+                            <li class="list-group-item"><strong>{% trans "Store" %}:</strong> {{ supplier.name }}</li>
+                        </ul>
+                    </div>
+                    
+                    <p>{% trans "You are now logged in and can start managing your products and orders." %}</p>
+                    
+                    <div class="mt-4">
+                        <a href="{% url 'suppliers:dashboard' %}" class="btn btn-primary">{% trans "Go to Dashboard" %}</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

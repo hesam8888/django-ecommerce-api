@@ -1,0 +1,636 @@
+{% load i18n %}
+
+<!-- Bulk selection activation button -->
+<div class="selection-activation">
+    <button type="button" id="activateSelection" class="action-button glass-button">{% trans "Select Products" %}</button>
+</div>
+
+<!-- Bulk actions bar -->
+<div class="bulk-actions-bar glass-panel" style="display: none;">
+    <div class="bulk-actions-controls">
+        <button type="button" id="selectAllProducts" class="action-button glass-button">{% trans "Select All" %}</button>
+        <button type="button" id="deselectAllProducts" class="action-button glass-button" style="display:none;">{% trans "Deselect All" %}</button>
+        <button type="button" id="bulkDeleteButton" class="action-button delete-button glass-button" disabled>{% trans "Delete Selected" %}</button>
+        <button type="button" id="cancelSelection" class="action-button glass-button">{% trans "Cancel Selection" %}</button>
+    </div>
+    <div class="selected-count">
+        <span id="selectedProductsCount">0</span> {% trans "products selected" %}
+    </div>
+</div>
+
+<!-- Grid View -->
+<div class="product-grid">
+    {% for product in products %}
+    <div class="product-card" data-product-id="{{ product.id }}">
+        <div class="product-selection" style="display: none;">
+            <input type="checkbox" class="product-checkbox" data-product-id="{{ product.id }}" data-product-name="{{ product.name }}">
+        </div>
+        {% with primary_image=product.images.first %}
+            {% if primary_image %}
+            <img src="{{ primary_image.image.url }}" alt="{{ product.name }}" class="product-image">
+            {% else %}
+            <div class="product-image" style="background: #eee; display: flex; align-items: center; justify-content: center;">
+                <span>{% trans "No image" %}</span>
+            </div>
+            {% endif %}
+        {% endwith %}
+        <div class="product-info">
+            <h3 class="product-title">{{ product.name }}</h3>
+            <div class="product-id">ID: {{ product.id }}</div>
+            <div class="product-price">${{ product.price }}</div>
+            <div class="product-status {% if product.is_active %}status-active{% else %}status-inactive{% endif %}">
+                {% if product.is_active %}{% trans "Active" %}{% else %}{% trans "Inactive" %}{% endif %}
+            </div>
+            <div class="product-actions">
+                <a href="{% url 'suppliers:add_product' %}?product_id={{ product.id }}" class="edit-button">{% trans "Edit" %}</a>
+                <button class="view-details-button" data-product-id="{{ product.id }}">{% trans "View Details" %}</button>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="stats-card">
+        <p>{% trans "No products found. Start by adding your first product." %}</p>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Table View -->
+<div class="products-table-container">
+    <table class="products-table">
+        <thead>
+            <tr>
+                <th class="selection-column" style="display: none;">
+                    <input type="checkbox" id="tableSelectAll">
+                </th>
+                <th>{% trans "Image" %}</th>
+                <th>{% trans "Brand Image" %}</th>
+                <th>{% trans "ID" %}</th>
+                <th>{% trans "Name" %}</th>
+                <th>{% trans "Category" %}</th>
+                <th>{% trans "Price" %}</th>
+                <th>{% trans "Status" %}</th>
+                <th>{% trans "Created" %}</th>
+                <th>{% trans "Actions" %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr>
+                <td class="selection-column" style="display: none;">
+                    <input type="checkbox" class="product-checkbox" data-product-id="{{ product.id }}" data-product-name="{{ product.name }}">
+                </td>
+                <td>
+                    {% with primary_image=product.images.first %}
+                        {% if primary_image %}
+                        <img src="{{ primary_image.image.url }}" alt="{{ product.name }}" class="table-image">
+                        {% else %}
+                        <div class="table-image" style="background: #eee; display: flex; align-items: center; justify-content: center;">
+                            <span>{% trans "No image" %}</span>
+                        </div>
+                        {% endif %}
+                    {% endwith %}
+                </td>
+                <td>
+                    {% if product.brand_image %}
+                    <img src="{{ product.brand_image.url }}" alt="{{ product.brand }}" class="brand-image">
+                    {% else %}
+                    <div class="brand-image" style="background: #eee; display: flex; align-items: center; justify-content: center;">
+                        <span>{% trans "No brand image" %}</span>
+                    </div>
+                    {% endif %}
+                </td>
+                <td>{{ product.id }}</td>
+                <td>{{ product.name }}</td>
+                <td><span class="category-badge">{{ product.category.name }}</span></td>
+                <td>${{ product.price }}</td>
+                <td>
+                    <span class="status-badge {% if product.is_active %}status-active{% else %}status-inactive{% endif %}">
+                        {% if product.is_active %}{% trans "Active" %}{% else %}{% trans "Inactive" %}{% endif %}
+                    </span>
+                </td>
+                <td>{{ product.created_at|date:"Y-m-d" }}</td>
+                <td>
+                    <div class="action-buttons">
+                        <a href="{% url 'suppliers:add_product' %}?product_id={{ product.id }}" class="action-button edit-button">{% trans "Edit" %}</a>
+                        <a href="{% url 'suppliers:delete_product' product.id %}" class="action-button delete-button">{% trans "Delete" %}</a>
+                        <button class="action-button view-details-button" data-product-id="{{ product.id }}">{% trans "View" %}</button>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9" style="text-align: center;">
+                    {% trans "No products found. Start by adding your first product." %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Product Detail Modal -->
+<div id="productDetailModal" class="modal">
+    <div class="modal-content product-detail-modal">
+        <div class="modal-header">
+            <h2 id="modalProductTitle"></h2>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body" id="modalProductDetails">
+            <div class="product-detail-loading">Loading...</div>
+        </div>
+        <div class="modal-footer">
+            <a href="{% url 'suppliers:add_product' %}?product_id={{ product.id }}" id="editProductButton" class="btn btn-primary">{% trans "Edit Product" %}</a>
+            <button type="button" class="btn-secondary close-modal">{% trans "Close" %}</button>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation modal for bulk delete -->
+<div id="bulkDeleteModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>{% trans "Confirm Bulk Delete" %}</h2>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p>{% trans "Are you sure you want to delete the selected products?" %}</p>
+            <div class="selected-products-list"></div>
+            <p class="warning-text">{% trans "This action cannot be undone!" %}</p>
+        </div>
+        <div class="modal-footer">
+            <form id="bulkDeleteForm" method="post" action="{% url 'suppliers:bulk_delete_products' %}">
+                {% csrf_token %}
+                <input type="hidden" name="product_ids" id="bulkDeleteProductIds">
+                <button type="button" class="btn-secondary close-modal">{% trans "Cancel" %}</button>
+                <button type="submit" class="btn-danger confirm-delete">{% trans "Delete Products" %}</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if is_paginated %}
+<div class="pagination">
+    <span class="step-links">
+        {% if page_obj.has_previous %}
+            <a href="?{% if request.GET.category %}category={{ request.GET.category }}&{% endif %}{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}page=1">&laquo; first</a>
+            <a href="?{% if request.GET.category %}category={{ request.GET.category }}&{% endif %}{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}page={{ page_obj.previous_page_number }}">previous</a>
+        {% endif %}
+
+        <span class="current">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+        </span>
+
+        {% if page_obj.has_next %}
+            <a href="?{% if request.GET.category %}category={{ request.GET.category }}&{% endif %}{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}page={{ page_obj.next_page_number }}">next</a>
+            <a href="?{% if request.GET.category %}category={{ request.GET.category }}&{% endif %}{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+        {% endif %}
+    </span>
+</div>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Selection activation
+    const activateSelectionBtn = document.getElementById('activateSelection');
+    const bulkActionsBar = document.querySelector('.bulk-actions-bar');
+    const cancelSelectionBtn = document.getElementById('cancelSelection');
+    const selectionColumns = document.querySelectorAll('.selection-column');
+    const productSelections = document.querySelectorAll('.product-selection');
+    
+    // Activate selection mode
+    activateSelectionBtn.addEventListener('click', function() {
+        bulkActionsBar.style.display = 'flex';
+        activateSelectionBtn.style.display = 'none';
+        
+        // Show checkboxes
+        selectionColumns.forEach(column => {
+            column.style.display = '';
+        });
+        
+        productSelections.forEach(selection => {
+            selection.style.display = 'block';
+        });
+    });
+    
+    // Cancel selection mode
+    cancelSelectionBtn.addEventListener('click', function() {
+        bulkActionsBar.style.display = 'none';
+        activateSelectionBtn.style.display = 'block';
+        
+        // Hide checkboxes and uncheck all
+        selectionColumns.forEach(column => {
+            column.style.display = 'none';
+        });
+        
+        productSelections.forEach(selection => {
+            selection.style.display = 'none';
+        });
+        
+        document.querySelectorAll('.product-checkbox').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        
+        if (document.getElementById('tableSelectAll')) {
+            document.getElementById('tableSelectAll').checked = false;
+        }
+        
+        updateSelectedState();
+    });
+
+    // Bulk selection functionality
+    const selectAllBtn = document.getElementById('selectAllProducts');
+    const deselectAllBtn = document.getElementById('deselectAllProducts');
+    const tableSelectAll = document.getElementById('tableSelectAll');
+    const bulkDeleteBtn = document.getElementById('bulkDeleteButton');
+    const selectedCountDisplay = document.getElementById('selectedProductsCount');
+    const productCheckboxes = document.querySelectorAll('.product-checkbox');
+    const bulkDeleteModal = document.getElementById('bulkDeleteModal');
+    
+    // Function to update the selected count and button state
+    function updateSelectedState() {
+        const selected = document.querySelectorAll('.product-checkbox:checked');
+        const count = selected.length;
+        
+        selectedCountDisplay.textContent = count;
+        bulkDeleteBtn.disabled = count === 0;
+        
+        if (count > 0) {
+            selectAllBtn.style.display = 'none';
+            deselectAllBtn.style.display = 'inline-block';
+        } else {
+            selectAllBtn.style.display = 'inline-block';
+            deselectAllBtn.style.display = 'none';
+        }
+        
+        // Update table header checkbox
+        if (tableSelectAll) {
+            tableSelectAll.checked = count > 0 && count === productCheckboxes.length;
+            tableSelectAll.indeterminate = count > 0 && count < productCheckboxes.length;
+        }
+    }
+    
+    // Select all products
+    selectAllBtn.addEventListener('click', function() {
+        productCheckboxes.forEach(checkbox => checkbox.checked = true);
+        updateSelectedState();
+    });
+    
+    // Deselect all products
+    deselectAllBtn.addEventListener('click', function() {
+        productCheckboxes.forEach(checkbox => checkbox.checked = false);
+        updateSelectedState();
+    });
+    
+    // Table header select all
+    if (tableSelectAll) {
+        tableSelectAll.addEventListener('change', function() {
+            const isChecked = this.checked;
+            productCheckboxes.forEach(checkbox => checkbox.checked = isChecked);
+            updateSelectedState();
+        });
+    }
+    
+    // Individual checkbox change
+    productCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectedState);
+    });
+    
+    // Bulk delete button
+    bulkDeleteBtn.addEventListener('click', function() {
+        const selected = document.querySelectorAll('.product-checkbox:checked');
+        if (selected.length === 0) return;
+        
+        // Populate selected products list in modal
+        const selectedProductsList = document.querySelector('.selected-products-list');
+        selectedProductsList.innerHTML = '';
+        
+        const productIds = [];
+        selected.forEach(checkbox => {
+            const productId = checkbox.dataset.productId;
+            const productName = checkbox.dataset.productName;
+            productIds.push(productId);
+            
+            const listItem = document.createElement('div');
+            listItem.className = 'selected-product-item';
+            listItem.textContent = `${productName} (ID: ${productId})`;
+            selectedProductsList.appendChild(listItem);
+        });
+        
+        // Set product IDs in hidden form field
+        document.getElementById('bulkDeleteProductIds').value = productIds.join(',');
+        
+        // Show modal
+        bulkDeleteModal.style.display = 'block';
+    });
+    
+    // Close modal functionality
+    document.querySelector('.close').addEventListener('click', function() {
+        bulkDeleteModal.style.display = 'none';
+    });
+    
+    document.querySelector('.close-modal').addEventListener('click', function() {
+        bulkDeleteModal.style.display = 'none';
+    });
+    
+    window.addEventListener('click', function(event) {
+        if (event.target === bulkDeleteModal) {
+            bulkDeleteModal.style.display = 'none';
+        }
+    });
+
+    // Original script code (pagination and category handling)
+    document.querySelectorAll('.category-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const categoryId = this.dataset.categoryId;
+            const currentView = new URLSearchParams(window.location.search).get('view') || 'grid';
+            
+            // Update URL without reloading
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.set('category', categoryId);
+            window.history.pushState({}, '', newUrl);
+            
+            // Show loading state
+            const productsSection = document.querySelector('.products-section');
+            productsSection.style.opacity = '0.5';
+            
+            // Fetch new content
+            fetch(`?category=${categoryId}&view=${currentView}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                productsSection.innerHTML = html;
+                productsSection.style.opacity = '1';
+                
+                // Re-initialize theme if dark mode is active
+                if (document.documentElement.getAttribute('data-theme') === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                productsSection.style.opacity = '1';
+            });
+        });
+    });
+
+    document.querySelectorAll('.pagination-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const page = this.dataset.page;
+            const currentCategory = new URLSearchParams(window.location.search).get('category');
+            const currentView = new URLSearchParams(window.location.search).get('view') || 'grid';
+            
+            // Update URL without reloading
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.set('page', page);
+            window.history.pushState({}, '', newUrl);
+            
+            // Show loading state
+            const productsSection = document.querySelector('.products-section');
+            productsSection.style.opacity = '0.5';
+            
+            // Fetch new content
+            fetch(`?page=${page}${currentCategory ? `&category=${currentCategory}` : ''}&view=${currentView}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                productsSection.innerHTML = html;
+                productsSection.style.opacity = '1';
+                
+                // Re-initialize theme if dark mode is active
+                if (document.documentElement.getAttribute('data-theme') === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                productsSection.style.opacity = '1';
+            });
+        });
+    });
+
+    // Product detail modal functionality
+    const productDetailModal = document.getElementById('productDetailModal');
+    const modalProductTitle = document.getElementById('modalProductTitle');
+    const modalProductDetails = document.getElementById('modalProductDetails');
+    const editProductButton = document.getElementById('editProductButton');
+    const detailsCloseButtons = productDetailModal.querySelectorAll('.close, .close-modal');
+
+    // Close the modal when clicking the X or close button
+    detailsCloseButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            productDetailModal.style.display = 'none';
+        });
+    });
+
+    // Close the modal when clicking outside of it
+    window.addEventListener('click', function(event) {
+        if (event.target === productDetailModal) {
+            productDetailModal.style.display = 'none';
+        }
+    });
+
+    // Handle "View Details" button clicks
+    const viewDetailsButtons = document.querySelectorAll('.view-details-button');
+    viewDetailsButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation(); // Prevent card click event
+            const productId = this.getAttribute('data-product-id');
+            loadProductDetails(productId);
+        });
+    });
+
+    // Make entire product card clickable
+    const productCards = document.querySelectorAll('.product-card');
+    productCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const productId = this.getAttribute('data-product-id');
+            loadProductDetails(productId);
+        });
+    });
+
+    // Function to load product details via AJAX
+    function loadProductDetails(productId) {
+        // Show the modal with loading state
+        productDetailModal.style.display = 'block';
+        modalProductTitle.textContent = 'Loading Product...';
+        modalProductDetails.innerHTML = '<div class="product-detail-loading">Loading product details...</div>';
+        
+        // Set the edit button link
+        editProductButton.href = `/suppliers/edit-product/${productId}/`;
+        
+        // First try the regular API endpoint
+        fetchProductDetails(`/suppliers/api/products/${productId}/`)
+            .catch(error => {
+                console.warn("Regular API failed, trying debug endpoint:", error);
+                // If that fails, try the simpler debug endpoint
+                return fetchProductDetails(`/suppliers/api/debug/${productId}/`);
+            })
+            .catch(error => {
+                // If both endpoints fail, show error message
+                console.error('Both API endpoints failed:', error);
+                modalProductDetails.innerHTML = `
+                    <div class="error-message" style="text-align:center;padding:20px;">
+                        <h3 style="color:#e74c3c;margin-bottom:10px;">Failed to load product details</h3>
+                        <p style="margin-bottom:15px;">There was a problem loading the product information. Please try again.</p>
+                        <p style="font-size:0.9em;color:#666;">${error.message || 'Unknown error'}</p>
+                        <button class="btn btn-primary" style="margin-top:15px;" onclick="window.location.reload()">Refresh Page</button>
+                    </div>
+                `;
+            });
+    }
+
+    // Helper function to fetch product details from a given URL
+    function fetchProductDetails(url) {
+        return fetch(url, {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+                throw new Error('Session expired. Please log in again.');
+            }
+            
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.error || `Error ${response.status}: ${response.statusText}`);
+                }).catch(e => {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                });
+            }
+            return response.json();
+        })
+        .then(product => {
+            // Check if we have a valid product object
+            if (!product || !product.id) {
+                throw new Error('Invalid product data received');
+            }
+            
+            // Update modal title
+            modalProductTitle.textContent = product.name;
+            
+            // Determine if this is the full API or debug API
+            const isDebugApi = !product.images;
+            
+            if (isDebugApi) {
+                // Create a simpler view for debug API
+                const detailsHtml = `
+                    <div style="padding: 20px;">
+                        <h2>${product.name}</h2>
+                        <p><strong>Price:</strong> $${product.price}</p>
+                        <div style="margin-top: 20px;">
+                            <h3>Description</h3>
+                            <p>${product.description || 'No description available.'}</p>
+                        </div>
+                        <div style="margin-top: 20px; padding: 10px; background: #f8f8f8; border-radius: 4px;">
+                            <p>Note: This is showing limited product information. For full details, please edit the product.</p>
+                        </div>
+                    </div>
+                `;
+                modalProductDetails.innerHTML = detailsHtml;
+                return;
+            }
+            
+            // Full API response - build complete HTML
+            const images = product.images || [];
+            const mainImage = images.length > 0 && images[0].url ? 
+                `<img src="${images[0].url}" alt="${product.name}" class="product-detail-main-image">` : 
+                `<div class="product-detail-main-image" style="background:#eee;display:flex;align-items:center;justify-content:center;"><span>No image</span></div>`;
+            
+            // Build thumbnails HTML
+            let thumbnailsHtml = '';
+            if (images.length > 1) {
+                thumbnailsHtml = '<div class="product-detail-thumbnails">';
+                images.forEach((image, index) => {
+                    if (image.url) {
+                        thumbnailsHtml += `<img src="${image.url}" alt="${product.name}" class="product-detail-thumbnail ${index === 0 ? 'active' : ''}" data-index="${index}">`;
+                    }
+                });
+                thumbnailsHtml += '</div>';
+            }
+            
+            // Ensure product has a category object
+            const categoryName = product.category && product.category.name ? product.category.name : 'Uncategorized';
+            
+            // Build attributes HTML
+            let attributesHtml = '<h3>Product Attributes</h3>';
+            if (product.attributes && Object.keys(product.attributes).length > 0) {
+                Object.entries(product.attributes).forEach(([key, value]) => {
+                    attributesHtml += `
+                        <div class="attribute-item">
+                            <span class="attribute-label">${key}:</span>
+                            <span class="attribute-value">${value}</span>
+                        </div>
+                    `;
+                });
+            } else {
+                attributesHtml += '<p>No attributes defined for this product.</p>';
+            }
+            
+            // Build the complete HTML
+            const detailsHtml = `
+                <div class="product-detail-container">
+                    <div class="product-detail-images">
+                        ${mainImage}
+                        ${thumbnailsHtml}
+                    </div>
+                    <div class="product-detail-info">
+                        <div class="price">$${product.price}</div>
+                        <p><strong>Category:</strong> ${categoryName}</p>
+                        <p><strong>SKU:</strong> ${product.sku || 'N/A'}</p>
+                        <p><strong>Status:</strong> ${product.is_active ? 'Active' : 'Inactive'}</p>
+                        <div class="description">
+                            <h3>Description</h3>
+                            <p>${product.description || 'No description available.'}</p>
+                        </div>
+                        <div class="product-attributes">
+                            ${attributesHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Update the modal body
+            modalProductDetails.innerHTML = detailsHtml;
+            
+            // Add thumbnail click handlers if needed
+            const thumbnails = modalProductDetails.querySelectorAll('.product-detail-thumbnail');
+            const mainImageEl = modalProductDetails.querySelector('.product-detail-main-image');
+            
+            thumbnails.forEach(thumb => {
+                thumb.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    mainImageEl.src = images[index].url;
+                    
+                    // Update active thumbnail
+                    thumbnails.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+        });
+    }
+});
+</script>
+
+<style>
+.brand-image {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    border-radius: 4px;
+    background: #f5f5f5;
+}
+</style> 

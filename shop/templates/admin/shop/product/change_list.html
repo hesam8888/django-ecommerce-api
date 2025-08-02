@@ -1,0 +1,149 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static 'shop/css/product_detail_sidebar.css' %}">
+<style>
+    /* Hide Quick Edit and edit buttons */
+    .quick-edit-btn,
+    .quick-edit-link,
+    a[href*="quick-edit"],
+    a[href*="quick_edit"],
+    .field-quick_edit,
+    .field-quick-edit,
+    td.field-quick_edit,
+    th.field-quick_edit,
+    .quick-edit,
+    [class*="quick-edit"],
+    [class*="quick_edit"],
+    [data-quick-edit],
+    [data-quick_edit],
+    .field-image a[href*="edit"],
+    .field-image a[href*="change"],
+    .field-image a[href*="quick"],
+    .field-image a[href*="edit"]:hover,
+    .field-image a[href*="change"]:hover,
+    .field-image a[href*="quick"]:hover {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+        opacity: 0 !important;
+        position: absolute !important;
+        pointer-events: none !important;
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        clip: rect(0, 0, 0, 0) !important;
+    }
+
+    /* Remove hover effects that might show edit buttons */
+    .field-image:hover::after,
+    .field-image:hover::before {
+        display: none !important;
+    }
+
+    /* Ensure images are not clickable */
+    .field-image img {
+        pointer-events: none !important;
+    }
+</style>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script src="{% static 'shop/js/product_detail_sidebar.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Remove Quick Edit buttons
+        var quickEditButtons = document.querySelectorAll('.quick-edit-btn, .quick-edit-link, a[href*="quick-edit"], a[href*="quick_edit"]');
+        quickEditButtons.forEach(function(button) {
+            button.remove();
+        });
+        
+        // Remove edit buttons
+        var editButtons = document.querySelectorAll('.field-image a[href*="edit"], .field-image a[href*="change"], .field-image a[href*="quick"]');
+        editButtons.forEach(function(button) {
+            button.remove();
+        });
+
+        // Remove any quick edit related columns
+        var table = document.querySelector('#result_list');
+        if (table) {
+            var headers = table.querySelectorAll('th');
+            headers.forEach(function(header) {
+                if (header.textContent.toLowerCase().includes('quick') || 
+                    header.textContent.toLowerCase().includes('edit')) {
+                    header.style.display = 'none';
+                }
+            });
+        }
+
+        // Remove hover effects from images
+        var images = document.querySelectorAll('.field-image');
+        images.forEach(function(image) {
+            image.style.cursor = 'default';
+            image.onclick = function(e) {
+                e.preventDefault();
+                return false;
+            };
+        });
+    });
+</script>
+{% endblock %}
+
+{% block object-tools-items %}
+    {% if has_add_permission %}
+        <li>
+            <a href="{% url opts|admin_urlname:'add' %}" class="addlink">
+                {% blocktranslate with cl.opts.verbose_name as name %}Add {{ name }}{% endblocktranslate %}
+            </a>
+        </li>
+    {% endif %}
+{% endblock %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const deleteForm = document.querySelector('#delete-form');
+        const deleteProductId = document.querySelector('#delete-product-id');
+        const deleteModal = document.querySelector('#delete-modal');
+
+        if (deleteForm && deleteProductId && deleteModal) {
+            deleteForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const productId = deleteProductId.value;
+
+                fetch(`/shop/product/${productId}/delete/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Remove the product card from the DOM
+                        const productCard = document.querySelector(`[data-id="${productId}"]`);
+                        if (productCard) {
+                            productCard.remove();
+                        }
+                        // Close the modal
+                        deleteModal.style.display = 'none';
+                        // Show success message
+                        alert('{% trans "Product deleted successfully" %}');
+                        // Reload the page to ensure the list is up to date
+                        window.location.reload();
+                    } else {
+                        throw new Error('{% trans "Error deleting product" %}');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('{% trans "An error occurred while deleting the product" %}');
+                });
+            });
+        }
+    });
+</script> 

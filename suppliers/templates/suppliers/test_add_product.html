@@ -1,0 +1,114 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Add Product</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .error {
+            color: red;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Add Product Form</h1>
+    
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    {% if form.errors %}
+    <div class="error-summary">
+        <p>Please correct the following errors:</p>
+        {{ form.non_field_errors }}
+        {% for field in form %}
+            {% for error in field.errors %}
+                <p class="error">{{ field.label }}: {{ error }}</p>
+            {% endfor %}
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="id_name">Product Name *</label>
+            <input type="text" id="id_name" name="name" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="id_category">Category *</label>
+            <select id="id_category" name="category" required>
+                <option value="">Select Category</option>
+                {% for category in categories %}
+                <option value="{{ category.id }}">{{ category.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="id_description">Description *</label>
+            <textarea id="id_description" name="description" required></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="id_price">Price *</label>
+            <input type="number" id="id_price" name="price" step="0.01" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="id_price_currency">Currency *</label>
+            <select id="id_price_currency" name="price_currency" required>
+                <option value="TOMAN">تومان</option>
+                <option value="USD">دلار</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="id_stock_quantity">Stock Quantity *</label>
+            <input type="number" id="id_stock_quantity" name="stock_quantity" min="0" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="id_images">Product Images</label>
+            <input type="file" id="id_images" name="images" multiple accept="image/*">
+        </div>
+        
+        <button type="submit">Add Product</button>
+    </form>
+</body>
+</html> 

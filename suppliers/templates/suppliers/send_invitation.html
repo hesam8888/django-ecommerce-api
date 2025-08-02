@@ -1,0 +1,104 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Send Supplier Invitation" %}{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .form-row {
+        padding: 10px;
+        margin-bottom: 10px;
+        background: #f8f8f8;
+        border-radius: 4px;
+    }
+    .form-row label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+    .form-row input, .form-row select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    .help {
+        color: #666;
+        font-size: 12px;
+        margin-top: 5px;
+    }
+    .submit-row {
+        margin-top: 20px;
+        padding: 10px;
+        background: #f8f8f8;
+        border-radius: 4px;
+    }
+    .submit-row input {
+        background: #79aec8;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .submit-row input:hover {
+        background: #417690;
+    }
+    .cancel-link {
+        padding: 10px 15px;
+        background: #f8f8f8;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        color: #333;
+        text-decoration: none;
+        display: inline-block;
+        margin-left: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <div class="module">
+        <h1>{% trans "Send Supplier Invitation" %}</h1>
+        
+        {% if messages %}
+        <ul class="messagelist">
+            {% for message in messages %}
+            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <fieldset class="module aligned">
+                <div class="form-row">
+                    <label for="email">{% trans "Email Address:" %}</label>
+                    <input type="email" name="email" id="email" required>
+                    <div class="help">{% trans "The email address of the supplier you want to invite" %}</div>
+                </div>
+                
+                <div class="form-row">
+                    <label for="store_username">{% trans "Store Username:" %}</label>
+                    <input type="text" name="store_username" id="store_username" required>
+                    <div class="help">{% trans "This will be the unique username for the supplier's store" %}</div>
+                </div>
+                
+                <div class="form-row">
+                    <label for="supplier_name">{% trans "Supplier Name:" %}</label>
+                    <input type="text" name="supplier_name" id="supplier_name" required>
+                    <div class="help">{% trans "Name of the new supplier" %}</div>
+                </div>
+            </fieldset>
+            
+            <div class="submit-row">
+                <input type="submit" value="{% trans 'Send Invitation' %}" class="default">
+                <a href="{% url 'suppliers:dashboard' %}" class="cancel-link">{% trans "Cancel" %}</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

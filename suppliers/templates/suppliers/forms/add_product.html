@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% translate "Product Supplier Portal" %}</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #7c3aed;
+            --primary-light: #8b5cf6;
+            --secondary-color: #a78bfa;
+            --background-color: #0f172a;
+            --card-bg: rgba(15, 23, 42, 0.95);
+            --text-color: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border-color: rgba(148, 163, 184, 0.2);
+            --border-radius: 20px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            color: var(--text-color);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            height: 90vh;
+            display: flex;
+            gap: 2rem;
+        }
+
+        .form-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-radius: var(--border-radius);
+            padding: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border-color);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .form-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .form-header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .form-content {
+            display: flex;
+            gap: 2.5rem;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .form-fields {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            padding-right: 2.5rem;
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+            padding-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+            font-weight: 500;
+            font-size: 1rem;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background: rgba(15, 23, 42, 0.5);
+            transition: var(--transition);
+            font-size: 1rem;
+            color: var(--text-color);
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1);
+        }
+
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .image-section {
+            max-width: 280px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            max-height: 320px;
+        }
+
+        .image-upload {
+            border: 3px dashed var(--primary-light);
+            border-radius: var(--border-radius);
+            padding: 1.2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background: rgba(124, 58, 237, 0.05);
+            flex: 0 0 auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .image-upload::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent, rgba(124, 58, 237, 0.1), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+
+        .image-upload:hover::before {
+            transform: translateX(100%);
+        }
+
+        .image-upload:hover {
+            border-color: var(--primary-color);
+            background: rgba(124, 58, 237, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .image-preview {
+            flex: unset;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.7rem;
+            padding: 0.7rem;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: var(--border-radius);
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        .preview-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            border: 2px solid var(--border-color);
+            transition: var(--transition);
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        .preview-item.sortable-ghost {
+            opacity: 0.5;
+            transform: scale(1.05);
+            border-color: var(--primary-color);
+        }
+
+        .preview-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .preview-item:hover img {
+            transform: scale(1.1);
+        }
+
+        .preview-item .position-label {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: rgba(15, 23, 42, 0.9);
+            color: white;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            z-index: 2;
+            backdrop-filter: blur(4px);
+        }
+
+        .preview-item .remove {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(15, 23, 42, 0.9);
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            z-index: 2;
+            transition: var(--transition);
+            backdrop-filter: blur(4px);
+        }
+
+        .preview-item .remove:hover {
+            background: rgba(239, 68, 68, 0.9);
+            transform: scale(1.1) rotate(90deg);
+        }
+
+        .submit-btn {
+            background: linear-gradient(to right, var(--primary-color), var(--primary-light));
+            color: white;
+            border: none;
+            padding: 1.25rem 2.5rem;
+            border-radius: var(--border-radius);
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 2rem;
+            align-self: flex-end;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .error {
+            border-color: #ef4444 !important;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        .error-message {
+            color: #ef4444;
+            font-size: 0.9rem;
+            margin-top: 0.4rem;
+            display: none;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.2);
+            border-radius: var(--border-radius);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: var(--border-radius);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+    </style>
+</head>
+<body dir="rtl">
+    <div class="container">
+        <div class="form-card">
+            <div class="form-header">
+                <h1 data-lang="fa">افزودن محصول جدید</h1>
+                <p data-lang="fa">لطفا جزئیات محصول را وارد کنید</p>
+            </div>
+            <form id="productForm" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="form-content">
+                    <div class="form-fields">
+                        <div class="form-group">
+                            <label for="productName" data-lang="fa">نام محصول</label>
+                            <input type="text" id="productName" name="name" required>
+                            <div class="error-message" data-lang="fa">نام محصول الزامی است</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="category" data-lang="fa">دسته‌بندی</label>
+                            <select id="category" name="category" required>
+                                <option value="" data-lang="fa">انتخاب دسته‌بندی</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}" data-lang="fa">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="error-message" data-lang="fa">لطفا دسته‌بندی را انتخاب کنید</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="price" data-lang="fa">قیمت</label>
+                            <input type="number" id="price" name="price" step="0.01" required>
+                            <div class="error-message" data-lang="fa">لطفا قیمت معتبر وارد کنید</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="price_currency" data-lang="fa">واحد پول</label>
+                            <select id="price_currency" name="price_currency" required>
+                                <option value="TOMAN" data-lang="fa">تومان</option>
+                                <option value="USD" data-lang="fa">دلار</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="stock" data-lang="fa">تعداد موجودی</label>
+                            <input type="number" id="stock" name="stock_quantity" required>
+                            <div class="error-message" data-lang="fa">لطفا تعداد موجودی را وارد کنید</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="productDescription" data-lang="fa">توضیحات محصول</label>
+                            <textarea id="productDescription" name="description" required></textarea>
+                            <div class="error-message" data-lang="fa">توضیحات محصول الزامی است</div>
+                        </div>
+                    </div>
+
+                    <div class="image-section">
+                        <label data-lang="fa">تصاویر محصول</label>
+                        <div class="image-upload" id="imageUpload">
+                            <input type="file" id="fileInput" name="images" multiple accept="image/*" style="display: none;">
+                            <p data-lang="fa">تصاویر را اینجا رها کنید یا برای انتخاب کلیک کنید</p>
+                            <p class="upload-hint" data-lang="fa">PNG, JPG تا 10 مگابایت</p>
+                        </div>
+                        <div class="image-preview" id="imagePreview"></div>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" data-lang="fa">افزودن محصول</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('productForm');
+            const imageUpload = document.getElementById('imageUpload');
+            const fileInput = document.getElementById('fileInput');
+            const imagePreview = document.getElementById('imagePreview');
+            const processedFiles = new Set(); // Initialize the Set for tracking processed files
+
+            // Initialize Sortable.js
+            new Sortable(imagePreview, {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                onEnd: function() {
+                    updatePositions();
+                }
+            });
+
+            function updatePositions() {
+                const items = imagePreview.querySelectorAll('.preview-item');
+                items.forEach((item, index) => {
+                    const label = item.querySelector('.position-label');
+                    if (label) {
+                        label.textContent = `${index + 1}/${items.length}`;
+                    }
+                });
+            }
+
+            function handleFiles(files) {
+                const validFiles = Array.from(files).filter(file => {
+                    const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+                    const maxSize = 20 * 1024 * 1024; // 20MB
+                    
+                    if (!validTypes.includes(file.type)) {
+                        alert('Please upload only image files (JPEG, PNG, GIF)');
+                        return false;
+                    }
+                    
+                    if (file.size > maxSize) {
+                        alert('File size should be less than 20MB');
+                        return false;
+                    }
+                    
+                    return true;
+                });
+
+                validFiles.forEach(file => {
+                    if (processedFiles.has(file.name)) {
+                        return;
+                    }
+                    processedFiles.add(file.name);
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const previewItem = document.createElement('div');
+                        previewItem.className = 'preview-item';
+                        previewItem.dataset.originalFileName = file.name;
+                        
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        
+                        const positionLabel = document.createElement('div');
+                        positionLabel.className = 'position-label';
+                        
+                        const removeBtn = document.createElement('button');
+                        removeBtn.className = 'remove';
+                        removeBtn.innerHTML = '×';
+                        removeBtn.onclick = function() {
+                            previewItem.remove();
+                            processedFiles.delete(file.name);
+                            updatePositions();
+                        };
+                        
+                        previewItem.appendChild(img);
+                        previewItem.appendChild(positionLabel);
+                        previewItem.appendChild(removeBtn);
+                        imagePreview.appendChild(previewItem);
+                        updatePositions();
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            // File handling
+            imageUpload.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+            async function handleFormSubmit(event) {
+                event.preventDefault();
+                
+                try {
+                    const form = event.target;
+                    const formData = new FormData(form);
+                    const submitBtn = form.querySelector('.submit-btn');
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'در حال ذخیره...';
+                    
+                    // Get all preview items
+                    const previewItems = document.querySelectorAll('.preview-item');
+                    
+                    // Clear existing images from formData
+                    formData.delete('images');
+                    
+                    // Process all images
+                    const imagePromises = Array.from(previewItems).map(async (item, index) => {
+                        const img = item.querySelector('img');
+                        const croppedFileUrl = item.dataset.croppedFile;
+                        
+                        if (croppedFileUrl) {
+                            const response = await fetch(croppedFileUrl);
+                            const blob = await response.blob();
+                            const fileName = item.dataset.originalFileName || `image_${index}.jpg`;
+                            return new File([blob], fileName, { type: 'image/jpeg' });
+                        } else if (img.src.startsWith('data:')) {
+                            const response = await fetch(img.src);
+                            const blob = await response.blob();
+                            const fileName = item.dataset.originalFileName || `image_${index}.jpg`;
+                            return new File([blob], fileName, { type: 'image/jpeg' });
+                        }
+                        return null;
+                    });
+                    
+                    // Wait for all images to be processed
+                    const imageFiles = await Promise.all(imagePromises);
+                    
+                    // Add processed images to formData
+                    imageFiles.filter(file => file !== null).forEach(file => {
+                        formData.append('images', file);
+                    });
+                    
+                    // Submit the form
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'same-origin'
+                    });
+                    
+                    if (response.ok) {
+                        window.location.href = response.url;
+                    } else {
+                        throw new Error('Form submission failed');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error submitting form. Please try again.');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'افزودن محصول';
+                }
+            }
+
+            // Add event listener for form submission
+            form.addEventListener('submit', handleFormSubmit);
+
+            // Input validation
+            form.querySelectorAll('input, select, textarea').forEach(input => {
+                input.addEventListener('input', () => {
+                    if (input.value.trim()) {
+                        input.classList.remove('error');
+                        input.nextElementSibling.style.display = 'none';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,542 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>جستجوی محصولات</title>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        :root {
+            --primary-color: #6c5ce7;
+            --secondary-color: #a8a4e6;
+            --background-color: #1a1a1a;
+            --card-bg: rgba(30, 30, 30, 0.8);
+            --text-color: #ffffff;
+            --text-secondary: #b3b3b3;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --border-radius: 12px;
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Doran', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--background-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .search-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .search-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        .search-form {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            margin-bottom: 30px;
+        }
+
+        .search-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr auto;
+            gap: 15px;
+            align-items: end;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .form-control, .form-select {
+            padding: 12px 16px;
+            background: #2a2a2a;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: var(--transition);
+        }
+
+        .form-control:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .btn:hover {
+            background: #5a4fd8;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .results-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+        }
+
+        .results-count {
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+
+        .sort-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .product-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            border-color: var(--primary-color);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: #2a2a2a;
+        }
+
+        .product-info {
+            padding: 20px;
+        }
+
+        .product-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text-color);
+        }
+
+        .product-price {
+            font-size: 20px;
+            font-weight: 700;
+            color: #00b894;
+            margin-bottom: 10px;
+        }
+
+        .product-category {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .no-results h3 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .page-link {
+            padding: 10px 16px;
+            background: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .page-link:hover {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .page-link.active {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .page-link.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+            .search-row {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+            
+            .results-info {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="search-header">
+            <h1>🔍 جستجوی محصولات</h1>
+            <p>محصولات مورد نظر خود را پیدا کنید</p>
+        </div>
+
+        <form class="search-form" id="searchForm">
+            <div class="search-row">
+                <div class="form-group">
+                    <label for="searchQuery">جستجو</label>
+                    <input type="text" id="searchQuery" name="q" class="form-control" 
+                           placeholder="نام محصول، برند، مدل یا SKU..." 
+                           value="{{ search_query }}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="categoryFilter">دسته‌بندی</label>
+                    <select id="categoryFilter" name="category" class="form-select">
+                        <option value="">همه دسته‌بندی‌ها</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}" 
+                                {% if category.id|stringformat:"s" == selected_category_id %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="sortBy">مرتب‌سازی</label>
+                    <select id="sortBy" name="sort_by" class="form-select">
+                        <option value="-created_at" {% if sort_by == '-created_at' %}selected{% endif %}>جدیدترین</option>
+                        <option value="name" {% if sort_by == 'name' %}selected{% endif %}>نام (الف-ی)</option>
+                        <option value="-name" {% if sort_by == '-name' %}selected{% endif %}>نام (ی-الف)</option>
+                        <option value="price_toman" {% if sort_by == 'price_toman' %}selected{% endif %}>قیمت (کم به زیاد)</option>
+                        <option value="-price_toman" {% if sort_by == '-price_toman' %}selected{% endif %}>قیمت (زیاد به کم)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="perPage">تعداد در صفحه</label>
+                    <select id="perPage" name="per_page" class="form-select">
+                        <option value="12" {% if per_page == 12 %}selected{% endif %}>12</option>
+                        <option value="24" {% if per_page == 24 %}selected{% endif %}>24</option>
+                        <option value="48" {% if per_page == 48 %}selected{% endif %}>48</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" class="btn">🔍 جستجو</button>
+                </div>
+            </div>
+        </form>
+
+        <div class="results-info" id="resultsInfo" style="display: none;">
+            <div class="results-count" id="resultsCount"></div>
+            <div class="sort-controls">
+                <span>مرتب‌سازی:</span>
+                <select id="sortSelect" class="form-select" style="width: auto;">
+                    <option value="-created_at">جدیدترین</option>
+                    <option value="name">نام (الف-ی)</option>
+                    <option value="-name">نام (ی-الف)</option>
+                    <option value="price_toman">قیمت (کم به زیاد)</option>
+                    <option value="-price_toman">قیمت (زیاد به کم)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="products-grid" id="productsGrid">
+            <div class="loading" id="loading">
+                <p>در حال بارگذاری...</p>
+            </div>
+        </div>
+
+        <div class="pagination" id="pagination" style="display: none;"></div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Initialize Select2
+            $('#categoryFilter').select2({
+                placeholder: 'انتخاب دسته‌بندی',
+                allowClear: true
+            });
+
+            // Current search parameters
+            let currentParams = {
+                q: '{{ search_query }}',
+                category: '{{ selected_category_id }}',
+                sort_by: '{{ sort_by }}',
+                per_page: {{ per_page }},
+                page: {{ current_page }}
+            };
+
+            // Load products on page load
+            loadProducts();
+
+            // Handle form submission
+            $('#searchForm').on('submit', function(e) {
+                e.preventDefault();
+                currentParams.q = $('#searchQuery').val();
+                currentParams.category = $('#categoryFilter').val();
+                currentParams.sort_by = $('#sortBy').val();
+                currentParams.per_page = parseInt($('#perPage').val());
+                currentParams.page = 1;
+                loadProducts();
+            });
+
+            // Handle sort change
+            $('#sortSelect').on('change', function() {
+                currentParams.sort_by = $(this).val();
+                currentParams.page = 1;
+                loadProducts();
+            });
+
+            function loadProducts() {
+                const loading = $('#loading');
+                const grid = $('#productsGrid');
+                const resultsInfo = $('#resultsInfo');
+                const pagination = $('#pagination');
+
+                // Show loading
+                loading.show();
+                resultsInfo.hide();
+                pagination.hide();
+
+                // Build API URL
+                const params = new URLSearchParams();
+                Object.keys(currentParams).forEach(key => {
+                    if (currentParams[key] && currentParams[key] !== '') {
+                        params.append(key, currentParams[key]);
+                    }
+                });
+
+                const apiUrl = `/shop/api/products/search/?${params.toString()}`;
+
+                // Fetch products
+                fetch(apiUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        loading.hide();
+                        
+                        if (data.error) {
+                            grid.html(`<div class="no-results"><h3>خطا</h3><p>${data.error}</p></div>`);
+                            return;
+                        }
+
+                        displayProducts(data);
+                        updateURL();
+                    })
+                    .catch(error => {
+                        loading.hide();
+                        grid.html(`<div class="no-results"><h3>خطا</h3><p>خطا در بارگذاری محصولات</p></div>`);
+                        console.error('Error:', error);
+                    });
+            }
+
+            function displayProducts(data) {
+                const grid = $('#productsGrid');
+                const resultsInfo = $('#resultsInfo');
+                const resultsCount = $('#resultsCount');
+                const pagination = $('#pagination');
+
+                if (!data.products || data.products.length === 0) {
+                    grid.html(`
+                        <div class="no-results">
+                            <h3>محصولی یافت نشد</h3>
+                            <p>لطفاً کلمات کلیدی یا فیلترهای دیگری را امتحان کنید</p>
+                        </div>
+                    `);
+                    resultsInfo.hide();
+                    pagination.hide();
+                    return;
+                }
+
+                // Display products
+                let productsHTML = '';
+                data.products.forEach(product => {
+                    const imageUrl = product.images && product.images.length > 0 
+                        ? product.images[0].url 
+                        : '/static/shop/images/no-image.png';
+                    
+                    productsHTML += `
+                        <div class="product-card">
+                            <img src="${imageUrl}" alt="${product.name}" class="product-image" 
+                                 onerror="this.src='/static/shop/images/no-image.png'">
+                            <div class="product-info">
+                                <div class="product-name">${product.name}</div>
+                                <div class="product-price">${formatPrice(product.price_toman)} تومان</div>
+                                <div class="product-category">${product.category ? product.category.name : ''}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                grid.html(productsHTML);
+
+                // Update results info
+                const total = data.pagination.total_items;
+                const current = data.pagination.current_page;
+                const perPage = data.pagination.total_pages;
+                
+                resultsCount.text(`نمایش ${((current - 1) * currentParams.per_page) + 1} تا ${Math.min(current * currentParams.per_page, total)} از ${total} محصول`);
+                resultsInfo.show();
+
+                // Update sort select
+                $('#sortSelect').val(currentParams.sort_by);
+
+                // Display pagination
+                if (data.pagination.total_pages > 1) {
+                    displayPagination(data.pagination);
+                    pagination.show();
+                } else {
+                    pagination.hide();
+                }
+            }
+
+            function displayPagination(pagination) {
+                const paginationDiv = $('#pagination');
+                let paginationHTML = '';
+
+                // Previous button
+                if (pagination.has_previous) {
+                    paginationHTML += `<a href="#" class="page-link" data-page="${pagination.current_page - 1}">قبلی</a>`;
+                } else {
+                    paginationHTML += `<span class="page-link disabled">قبلی</span>`;
+                }
+
+                // Page numbers
+                const startPage = Math.max(1, pagination.current_page - 2);
+                const endPage = Math.min(pagination.total_pages, pagination.current_page + 2);
+
+                for (let i = startPage; i <= endPage; i++) {
+                    if (i === pagination.current_page) {
+                        paginationHTML += `<span class="page-link active">${i}</span>`;
+                    } else {
+                        paginationHTML += `<a href="#" class="page-link" data-page="${i}">${i}</a>`;
+                    }
+                }
+
+                // Next button
+                if (pagination.has_next) {
+                    paginationHTML += `<a href="#" class="page-link" data-page="${pagination.current_page + 1}">بعدی</a>`;
+                } else {
+                    paginationHTML += `<span class="page-link disabled">بعدی</span>`;
+                }
+
+                paginationDiv.html(paginationHTML);
+
+                // Handle pagination clicks
+                paginationDiv.on('click', '.page-link', function(e) {
+                    e.preventDefault();
+                    const page = $(this).data('page');
+                    if (page) {
+                        currentParams.page = page;
+                        loadProducts();
+                        $('html, body').animate({scrollTop: 0}, 300);
+                    }
+                });
+            }
+
+            function formatPrice(price) {
+                return new Intl.NumberFormat('fa-IR').format(price);
+            }
+
+            function updateURL() {
+                const params = new URLSearchParams();
+                Object.keys(currentParams).forEach(key => {
+                    if (currentParams[key] && currentParams[key] !== '') {
+                        params.append(key, currentParams[key]);
+                    }
+                });
+                
+                const newURL = `${window.location.pathname}?${params.toString()}`;
+                window.history.pushState({}, '', newURL);
+            }
+        });
+    </script>
+</body>
+</html> 

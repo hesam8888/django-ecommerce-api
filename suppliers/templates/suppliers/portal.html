@@ -1,0 +1,99 @@
+{% extends "suppliers/base.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="supplier-portal">
+    <h1>{% trans "Supplier Portal" %}</h1>
+    
+    <div class="actions">
+        <a href="{% if request.user.is_superuser %}{% url 'suppliers:select_supplier' %}{% else %}{% url 'suppliers:add_product' %}{% endif %}" class="button">{% trans "Add New Product" %}</a>
+    </div>
+    
+    <div class="products-list">
+        <h2>{% trans "Your Products" %}</h2>
+        {% if products %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>{% trans "Name" %}</th>
+                        <th>{% trans "Price" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td>{{ product.name }}</td>
+                        <td>{{ product.price }}</td>
+                        <td>{% if product.is_active %}{% trans "Active" %}{% else %}{% trans "Inactive" %}{% endif %}</td>
+                        <td>
+                            <a href="{% url 'suppliers:edit_product' product.id %}">{% trans "Edit" %}</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>{% trans "You haven't added any products yet." %}</p>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.supplier-portal {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.actions {
+    margin-bottom: 20px;
+}
+
+.actions .button {
+    display: inline-block;
+    background: #417690;
+    color: white;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 4px;
+}
+
+.actions .button:hover {
+    background: #295a6a;
+}
+
+.products-list {
+    background: white;
+    padding: 20px;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.products-list table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.products-list th,
+.products-list td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.products-list th {
+    font-weight: bold;
+}
+
+.products-list a {
+    color: #417690;
+    text-decoration: none;
+}
+
+.products-list a:hover {
+    text-decoration: underline;
+}
+</style>
+{% endblock %} 

@@ -1,0 +1,831 @@
+{% extends "admin/change_form.html" %}
+{% load i18n static %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="{% static 'shop/js/image_upload.js' %}"></script>
+    <style>
+        .image-preview-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            min-height: 200px;
+        }
+        .image-preview {
+            position: relative;
+            width: 100%;
+            padding-bottom: 100%;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: move;
+            transition: all 0.3s ease;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .image-preview:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-color: #007bff;
+        }
+        .image-preview img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .image-preview .remove-image {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #dc3545;
+            border: none;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 2;
+        }
+        .image-preview .remove-image:hover {
+            background: #dc3545;
+            color: white;
+        }
+        .image-upload-container {
+            border: 2px dashed #dee2e6;
+            padding: 30px;
+            text-align: center;
+            border-radius: 8px;
+            margin-top: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+        .image-upload-container:hover {
+            border-color: #007bff;
+            background: #e9ecef;
+        }
+        .image-upload-container i {
+            font-size: 32px;
+            margin-bottom: 15px;
+            color: #6c757d;
+        }
+        .image-upload-container p {
+            margin: 10px 0;
+            color: #495057;
+            font-size: 16px;
+        }
+        .image-upload-container small {
+            color: #6c757d;
+        }
+        #id_images {
+            display: none;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .alert {
+            margin-top: 0.5rem;
+            border-radius: 8px;
+        }
+        .highlight {
+            border-color: #007bff !important;
+            background-color: rgba(0, 123, 255, 0.1);
+        }
+        .sortable-ghost {
+            opacity: 0.5;
+        }
+        .existing-images {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid #dee2e6;
+        }
+        .existing-images h3 {
+            margin-bottom: 20px;
+            color: #212529;
+            font-size: 1.25rem;
+            font-weight: 500;
+        }
+        .image-counter {
+            position: absolute;
+            bottom: 8px;
+            left: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #495057;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 2;
+        }
+        .image-limit-warning {
+            display: none;
+            color: #dc3545;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        .submit-row {
+            position: relative;
+            z-index: 1000;
+        }
+        .image-checkbox {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            z-index: 3;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .image-preview.selected {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.3);
+        }
+        .bulk-actions {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        .bulk-actions button {
+            padding: 8px 15px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .bulk-delete-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+        .bulk-delete-btn:hover {
+            background-color: #c82333;
+        }
+        .select-all-btn {
+            background-color: #6c757d;
+            color: white;
+        }
+        .select-all-btn:hover {
+            background-color: #5a6268;
+        }
+        
+        /* Active Status Toggle Switch */
+        .active-status-toggle {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .active-status-toggle label {
+            margin-right: 15px;
+            font-weight: 500;
+            color: #495057;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #28a745;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .status-text {
+            margin-left: 15px;
+            font-size: 14px;
+            color: #6c757d;
+        }
+        
+        .status-text.active {
+            color: #28a745;
+        }
+        
+        .status-text.inactive {
+            color: #dc3545;
+        }
+    </style>
+{% endblock %}
+
+{% block after_related_objects %}
+    <div class="active-status-toggle">
+        <label for="id_is_active">وضعیت محصول:</label>
+        <label class="switch">
+            <input type="checkbox" id="id_is_active" name="is_active" {% if original.is_active %}checked{% endif %}>
+            <span class="slider"></span>
+        </label>
+        <span class="status-text {% if original.is_active %}active{% else %}inactive{% endif %}" id="statusText">
+            {% if original.is_active %}فعال{% else %}غیرفعال{% endif %}
+        </span>
+    </div>
+    
+    <div id="attributes-container"></div>
+    
+    {% if original %}
+        {# Edit form #}
+        <div class="form-group">
+            <label for="id_images">تصاویر جدید محصول</label>
+            <div class="image-upload-container" onclick="document.getElementById('id_images').click()">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>برای آپلود تصاویر اینجا کلیک کنید یا تصاویر را بکشید و رها کنید</p>
+                <small class="form-text text-muted">تصاویر محصول را انتخاب کنید (حداکثر 10 تصویر)</small>
+            </div>
+            <input type="file" name="images" id="id_images" multiple accept="image/*">
+            <div class="image-preview-container" id="image-preview-container"></div>
+            <div class="image-limit-warning" id="image-limit-warning">شما نمی‌توانید بیشتر از 10 تصویر آپلود کنید</div>
+        </div>
+
+        <div class="existing-images">
+            <h3>تصاویر موجود</h3>
+            <div class="bulk-actions">
+                <button type="button" class="select-all-btn" id="select-all-images">انتخاب همه</button>
+                <button type="button" class="bulk-delete-btn" id="bulk-delete-images">حذف تصاویر انتخاب شده</button>
+            </div>
+            <div class="image-preview-container" id="existing-images-container">
+                {% for image in original.images.all %}
+                    <div class="image-preview" data-image-id="{{ image.id }}">
+                        <input type="checkbox" class="image-checkbox" data-image-id="{{ image.id }}">
+                        <img src="{{ image.image.url }}" alt="تصویر محصول">
+                        <button type="button" class="remove-image" onclick="removeExistingImage({{ image.id }})">×</button>
+                        <div class="image-counter">{{ forloop.counter }}/10</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        {# Add form #}
+        <div class="form-group">
+            <label for="id_images">تصاویر محصول</label>
+            <div class="image-upload-container" onclick="document.getElementById('id_images').click()">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>برای آپلود تصاویر اینجا کلیک کنید یا تصاویر را بکشید و رها کنید</p>
+                <small class="form-text text-muted">تصاویر محصول را انتخاب کنید (حداکثر 10 تصویر)</small>
+            </div>
+            <input type="file" name="images" id="id_images" multiple accept="image/*">
+            <div class="image-preview-container" id="image-preview-container"></div>
+            <div class="image-limit-warning" id="image-limit-warning">شما نمی‌توانید بیشتر از 10 تصویر آپلود کنید</div>
+        </div>
+    {% endif %}
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInput = document.getElementById('id_images');
+        const previewContainer = document.getElementById('image-preview-container');
+        const existingImagesContainer = document.getElementById('existing-images-container');
+        const imageLimitWarning = document.getElementById('image-limit-warning');
+        const selectAllBtn = document.getElementById('select-all-images');
+        const bulkDeleteBtn = document.getElementById('bulk-delete-images');
+        const MAX_IMAGES = 10;
+        
+        function updateImageCounters() {
+            const existingCount = existingImagesContainer ? existingImagesContainer.children.length : 0;
+            const newCount = previewContainer ? previewContainer.children.length : 0;
+            const totalCount = existingCount + newCount;
+            
+            if (totalCount > MAX_IMAGES) {
+                imageLimitWarning.style.display = 'block';
+                return false;
+            } else {
+                imageLimitWarning.style.display = 'none';
+                return true;
+            }
+        }
+        
+        // به‌روزرسانی شماره‌گذاری تصاویر موجود
+        function updateExistingImageCounters() {
+            if (existingImagesContainer) {
+                const images = existingImagesContainer.querySelectorAll('.image-preview');
+                images.forEach((image, index) => {
+                    const counter = image.querySelector('.image-counter');
+                    if (counter) {
+                        counter.textContent = `${index + 1}/10`;
+                    }
+                });
+            }
+        }
+        
+        // Initialize Sortable for new images
+        if (previewContainer) {
+            new Sortable(previewContainer, {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                onEnd: function(evt) {
+                    // Update the order of files
+                    const files = Array.from(fileInput.files);
+                    const newFiles = [];
+                    const previews = Array.from(previewContainer.children);
+                    
+                    previews.forEach(preview => {
+                        const index = parseInt(preview.getAttribute('data-index'));
+                        if (index >= 0 && index < files.length) {
+                            newFiles.push(files[index]);
+                        }
+                    });
+                    
+                    const dataTransfer = new DataTransfer();
+                    newFiles.forEach(file => dataTransfer.items.add(file));
+                    fileInput.files = dataTransfer.files;
+                }
+            });
+        }
+
+        // Initialize Sortable for existing images
+        if (existingImagesContainer) {
+            new Sortable(existingImagesContainer, {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                onEnd: function(evt) {
+                    // Get the new order of images
+                    const imageIds = Array.from(existingImagesContainer.children)
+                        .map(el => el.getAttribute('data-image-id'));
+                    
+                    // Send the new order to the server
+                    fetch("{% url 'reorder_images' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}',
+                        },
+                        body: JSON.stringify({ image_ids: imageIds })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status !== 'success') {
+                            alert('خطا در ذخیره ترتیب تصاویر');
+                        } else {
+                            // به‌روزرسانی شماره‌گذاری پس از تغییر ترتیب
+                            updateExistingImageCounters();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('خطا در ذخیره ترتیب تصاویر');
+                    });
+                }
+            });
+        }
+        
+        // انتخاب همه تصاویر
+        if (selectAllBtn) {
+            selectAllBtn.addEventListener('click', function() {
+                const checkboxes = existingImagesContainer.querySelectorAll('.image-checkbox');
+                const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = !allChecked;
+                    const imagePreview = checkbox.closest('.image-preview');
+                    if (imagePreview) {
+                        imagePreview.classList.toggle('selected', !allChecked);
+                    }
+                });
+            });
+        }
+        
+        // حذف تصاویر انتخاب شده
+        if (bulkDeleteBtn) {
+            bulkDeleteBtn.addEventListener('click', function() {
+                const selectedCheckboxes = existingImagesContainer.querySelectorAll('.image-checkbox:checked');
+                
+                if (selectedCheckboxes.length === 0) {
+                    alert('لطفاً حداقل یک تصویر را انتخاب کنید');
+                    return;
+                }
+                
+                if (confirm(`آیا از حذف ${selectedCheckboxes.length} تصویر انتخاب شده اطمینان دارید؟`)) {
+                    // حذف هر تصویر به صورت جداگانه با API
+                    const deletePromises = Array.from(selectedCheckboxes).map(checkbox => {
+                        const imageId = checkbox.getAttribute('data-image-id');
+                        return fetch(`/shop/productimage/${imageId}/delete/`, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': '{{ csrf_token }}',
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status !== 'success') {
+                                throw new Error(data.message || 'خطای نامشخص');
+                            }
+                            return imageId;
+                        });
+                    });
+                    
+                    Promise.all(deletePromises)
+                        .then(deletedIds => {
+                            // حذف تصاویر از DOM
+                            deletedIds.forEach(imageId => {
+                                const imageElement = document.querySelector(`[data-image-id="${imageId}"]`);
+                                if (imageElement) {
+                                    imageElement.remove();
+                                    
+                                    // به‌روزرسانی شماره‌گذاری
+                                    updateExistingImageCounters();
+                                    
+                                    // به‌روزرسانی جدول تصاویر در فرم
+                                    updateImageTable();
+                                    
+                                    // به‌روزرسانی جدول تصاویر در فرم با استفاده از Django Admin
+                                    updateDjangoAdminTable();
+                                }
+                            });
+                            
+                            // نمایش پیام موفقیت
+                            alert('تصاویر با موفقیت حذف شدند');
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('خطا در حذف تصاویر: ' + error.message);
+                        });
+                }
+            });
+        }
+        
+        // اضافه کردن رویداد تغییر وضعیت چک‌باکس‌ها
+        if (existingImagesContainer) {
+            existingImagesContainer.addEventListener('change', function(e) {
+                if (e.target.classList.contains('image-checkbox')) {
+                    const imagePreview = e.target.closest('.image-preview');
+                    if (imagePreview) {
+                        imagePreview.classList.toggle('selected', e.target.checked);
+                    }
+                }
+            });
+        }
+        
+        if (fileInput) {
+            fileInput.addEventListener('change', function(e) {
+                if (!updateImageCounters()) {
+                    alert('شما نمی‌توانید بیشتر از 10 تصویر آپلود کنید');
+                    fileInput.value = '';
+                    return;
+                }
+                
+                const files = e.target.files;
+                const startIndex = previewContainer.children.length;
+                
+                // پاک کردن کانتینر قبل از اضافه کردن تصاویر جدید
+                previewContainer.innerHTML = '';
+                
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const preview = document.createElement('div');
+                            preview.className = 'image-preview';
+                            preview.setAttribute('data-index', i);
+                            preview.innerHTML = `
+                                <img src="${e.target.result}" alt="Preview">
+                                <button type="button" class="remove-image" onclick="removeImage(${i})">×</button>
+                                <div class="image-counter">${i + 1}/10</div>
+                            `;
+                            previewContainer.appendChild(preview);
+                            
+                            if (!updateImageCounters()) {
+                                alert('شما نمی‌توانید بیشتر از 10 تصویر آپلود کنید');
+                                fileInput.value = '';
+                                previewContainer.innerHTML = '';
+                                return;
+                            }
+                        }
+                        reader.readAsDataURL(file);
+                    }
+                }
+            });
+            
+            // Drag and drop functionality
+            const dropZone = document.querySelector('.image-upload-container');
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight(e) {
+                dropZone.classList.add('highlight');
+            }
+            
+            function unhighlight(e) {
+                dropZone.classList.remove('highlight');
+            }
+            
+            dropZone.addEventListener('drop', handleDrop, false);
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length + (existingImagesContainer ? existingImagesContainer.children.length : 0) > MAX_IMAGES) {
+                    alert('شما نمی‌توانید بیشتر از 10 تصویر آپلود کنید');
+                    return;
+                }
+                
+                fileInput.files = files;
+                const event = new Event('change');
+                fileInput.dispatchEvent(event);
+            }
+        }
+    });
+
+    function removeImage(index) {
+        const fileInput = document.getElementById('id_images');
+        const files = Array.from(fileInput.files);
+        files.splice(index, 1);
+        
+        const dataTransfer = new DataTransfer();
+        files.forEach(file => dataTransfer.items.add(file));
+        fileInput.files = dataTransfer.files;
+        
+        const event = new Event('change');
+        fileInput.dispatchEvent(event);
+    }
+
+    function removeExistingImage(imageId) {
+        if (confirm('آیا از حذف این تصویر اطمینان دارید؟')) {
+            // استفاده از API حذف تصویر
+            fetch(`/shop/productimage/${imageId}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const imageElement = document.querySelector(`[data-image-id="${imageId}"]`);
+                    if (imageElement) {
+                        imageElement.remove();
+                        // به‌روزرسانی شماره‌گذاری پس از حذف
+                        updateExistingImageCounters();
+                        
+                        // به‌روزرسانی جدول تصاویر در فرم
+                        updateImageTable();
+                        
+                        // به‌روزرسانی جدول تصاویر در فرم با استفاده از Django Admin
+                        updateDjangoAdminTable();
+                    }
+                } else {
+                    alert('خطا در حذف تصویر: ' + (data.message || 'خطای نامشخص'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('خطا در حذف تصویر');
+            });
+        }
+    }
+    
+    // تابع به‌روزرسانی شماره‌گذاری تصاویر موجود
+    function updateExistingImageCounters() {
+        const existingImagesContainer = document.getElementById('existing-images-container');
+        if (existingImagesContainer) {
+            const images = existingImagesContainer.querySelectorAll('.image-preview');
+            images.forEach((image, index) => {
+                const counter = image.querySelector('.image-counter');
+                if (counter) {
+                    counter.textContent = `${index + 1}/10`;
+                }
+            });
+        }
+    }
+    
+    // تابع به‌روزرسانی جدول تصاویر در فرم
+    function updateImageTable() {
+        // پیدا کردن جدول تصاویر در فرم
+        const imageTable = document.querySelector('.inline-group');
+        if (!imageTable) return;
+        
+        // پیدا کردن ردیف‌های جدول
+        const rows = imageTable.querySelectorAll('.dynamic-form');
+        
+        // به‌روزرسانی شماره‌گذاری ردیف‌ها
+        rows.forEach((row, index) => {
+            // به‌روزرسانی شماره ردیف
+            const rowNumber = row.querySelector('.row-number');
+            if (rowNumber) {
+                rowNumber.textContent = index + 1;
+            }
+            
+            // به‌روزرسانی شناسه‌های فیلدها
+            const inputs = row.querySelectorAll('input, select');
+            inputs.forEach(input => {
+                const name = input.getAttribute('name');
+                if (name) {
+                    const newName = name.replace(/images-\d+/, `images-${index}`);
+                    input.setAttribute('name', newName);
+                    input.setAttribute('id', `id_${newName}`);
+                }
+            });
+            
+            // به‌روزرسانی برچسب‌های فیلدها
+            const labels = row.querySelectorAll('label');
+            labels.forEach(label => {
+                const forAttr = label.getAttribute('for');
+                if (forAttr) {
+                    const newForAttr = forAttr.replace(/id_images-\d+/, `id_images-${index}`);
+                    label.setAttribute('for', newForAttr);
+                }
+            });
+            
+            // به‌روزرسانی فیلد order
+            const orderInput = row.querySelector('input[name$="-order"]');
+            if (orderInput) {
+                orderInput.value = index;
+            }
+        });
+        
+        // به‌روزرسانی تعداد کل ردیف‌ها
+        const totalFormsInput = document.querySelector('#id_images-TOTAL_FORMS');
+        if (totalFormsInput) {
+            totalFormsInput.value = rows.length;
+        }
+        
+        // به‌روزرسانی فیلد order در سرور برای همه تصاویر
+        const idInputs = imageTable.querySelectorAll('input[name$="-id"]');
+        idInputs.forEach((idInput, index) => {
+            const imageId = idInput.value;
+            if (imageId) {
+                fetch(`/shop/productimage/${imageId}/update-order/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}',
+                    },
+                    body: JSON.stringify({ order: index })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status !== 'success') {
+                        console.error('خطا در به‌روزرسانی ترتیب تصویر:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        });
+    }
+    
+    // تابع به‌روزرسانی جدول تصاویر در فرم با استفاده از Django Admin
+    function updateDjangoAdminTable() {
+        // پیدا کردن جدول تصاویر در فرم
+        const imageTable = document.querySelector('.inline-group');
+        if (!imageTable) return;
+        
+        // پیدا کردن ردیف‌های جدول
+        const rows = imageTable.querySelectorAll('.dynamic-form');
+        
+        // به‌روزرسانی شماره‌گذاری ردیف‌ها
+        rows.forEach((row, index) => {
+            // به‌روزرسانی شماره ردیف
+            const rowNumber = row.querySelector('.row-number');
+            if (rowNumber) {
+                rowNumber.textContent = index + 1;
+            }
+            
+            // به‌روزرسانی شناسه‌های فیلدها
+            const inputs = row.querySelectorAll('input, select');
+            inputs.forEach(input => {
+                const name = input.getAttribute('name');
+                if (name) {
+                    const newName = name.replace(/images-\d+/, `images-${index}`);
+                    input.setAttribute('name', newName);
+                    input.setAttribute('id', `id_${newName}`);
+                }
+            });
+            
+            // به‌روزرسانی برچسب‌های فیلدها
+            const labels = row.querySelectorAll('label');
+            labels.forEach(label => {
+                const forAttr = label.getAttribute('for');
+                if (forAttr) {
+                    const newForAttr = forAttr.replace(/id_images-\d+/, `id_images-${index}`);
+                    label.setAttribute('for', newForAttr);
+                }
+            });
+            
+            // به‌روزرسانی فیلد order
+            const orderInput = row.querySelector('input[name$="-order"]');
+            if (orderInput) {
+                orderInput.value = index;
+            }
+            
+            // به‌روزرسانی فیلد id
+            const idInput = row.querySelector('input[name$="-id"]');
+            if (idInput) {
+                const imageId = idInput.value;
+                if (imageId) {
+                    // به‌روزرسانی فیلد order در سرور
+                    fetch(`/shop/productimage/${imageId}/update-order/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}',
+                        },
+                        body: JSON.stringify({ order: index })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status !== 'success') {
+                            console.error('خطا در به‌روزرسانی ترتیب تصویر:', data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+                }
+            }
+        });
+        
+        // به‌روزرسانی تعداد کل ردیف‌ها
+        const totalFormsInput = document.querySelector('#id_images-TOTAL_FORMS');
+        if (totalFormsInput) {
+            totalFormsInput.value = rows.length;
+        }
+    }
+
+    // Active status toggle functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const toggleSwitch = document.getElementById('id_is_active');
+        const statusText = document.getElementById('statusText');
+        
+        toggleSwitch.addEventListener('change', function() {
+            if (this.checked) {
+                statusText.textContent = 'فعال';
+                statusText.classList.remove('inactive');
+                statusText.classList.add('active');
+            } else {
+                statusText.textContent = 'غیرفعال';
+                statusText.classList.remove('active');
+                statusText.classList.add('inactive');
+            }
+        });
+    });
+    </script>
+{% endblock %}

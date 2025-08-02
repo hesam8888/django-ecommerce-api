@@ -1,0 +1,344 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    :root {
+        --primary-color: #6c5ce7;
+        --secondary-color: #a8a4e6;
+        --background-color: #1a1a1a;
+        --card-bg: rgba(30, 30, 30, 0.8);
+        --text-color: #ffffff;
+        --text-secondary: #b3b3b3;
+        --border-color: rgba(255, 255, 255, 0.1);
+        --border-radius: 12px;
+        --transition: all 0.3s ease;
+    }
+
+    body {
+        background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+        color: var(--text-color);
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .card {
+        background: var(--card-bg);
+        backdrop-filter: blur(10px);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--border-color);
+    }
+
+    .card-header {
+        text-align: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .card-header h1 {
+        color: var(--text-color);
+        font-size: 1.8rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .card-header p {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: var(--text-color);
+        font-weight: 500;
+    }
+
+    input, select, textarea {
+        width: 100%;
+        padding: 0.8rem;
+        border: 2px solid var(--border-color);
+        border-radius: var(--border-radius);
+        background: rgba(0, 0, 0, 0.2);
+        color: var(--text-color);
+        transition: var(--transition);
+    }
+
+    input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+    }
+
+    .current-images {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .image-preview {
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        border: 2px solid var(--border-color);
+    }
+
+    .image-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .image-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        transition: var(--transition);
+    }
+
+    .image-preview:hover .image-overlay {
+        opacity: 1;
+    }
+
+    .image-order {
+        color: white;
+        font-size: 1.2rem;
+        font-weight: bold;
+    }
+
+    .primary-badge {
+        background: var(--primary-color);
+        color: white;
+        padding: 0.3rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        margin-top: 0.5rem;
+    }
+
+    .image-upload {
+        border: 3px dashed var(--primary-color);
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: var(--transition);
+        background: rgba(108, 92, 231, 0.05);
+    }
+
+    .image-upload:hover {
+        background: rgba(108, 92, 231, 0.1);
+    }
+
+    .checkbox-group {
+        margin-top: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .btn {
+        padding: 0.8rem 1.5rem;
+        border-radius: var(--border-radius);
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-primary {
+        background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+        color: white;
+        border: none;
+    }
+
+    .btn-secondary {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-color);
+        border: 1px solid var(--border-color);
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .error-message {
+        color: #ef4444;
+        font-size: 0.8rem;
+        margin-top: 0.3rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h1>{{ title }}</h1>
+            <p>{% trans "Edit your product details below" %}</p>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" class="product-form">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="{{ form.name.id_for_label }}">{% trans "Product Name" %}</label>
+                {{ form.name }}
+                {% if form.name.errors %}
+                <div class="error-message">{{ form.name.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.description.id_for_label }}">{% trans "Description" %}</label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                <div class="error-message">{{ form.description.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="{{ form.price.id_for_label }}">{% trans "Price" %}</label>
+                    {{ form.price }}
+                    {% if form.price.errors %}
+                    <div class="error-message">{{ form.price.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.sku.id_for_label }}">{% trans "SKU" %}</label>
+                    {{ form.sku }}
+                    {% if form.sku.errors %}
+                    <div class="error-message">{{ form.sku.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="{{ form.category.id_for_label }}">{% trans "Category" %}</label>
+                    {{ form.category }}
+                    {% if form.category.errors %}
+                    <div class="error-message">{{ form.category.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.brand.id_for_label }}">{% trans "Brand" %}</label>
+                    {{ form.brand }}
+                    {% if form.brand.errors %}
+                    <div class="error-message">{{ form.brand.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.tags.id_for_label }}">{% trans "Tags" %}</label>
+                {{ form.tags }}
+                {% if form.tags.errors %}
+                <div class="error-message">{{ form.tags.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label>{% trans "Product Images" %}</label>
+                <div class="current-images">
+                    {% for image in product.images.all %}
+                    <div class="image-preview">
+                        <img src="{{ image.image.url }}" alt="{{ product.name }}">
+                        <div class="image-overlay">
+                            <span class="image-order">{{ image.order }}</span>
+                            {% if image.is_primary %}
+                            <span class="primary-badge">{% trans "Primary" %}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="image-upload">
+                    <input type="file" name="images" multiple accept="image/*">
+                    <div class="checkbox-group">
+                        <input type="checkbox" name="delete_existing_images" id="delete_existing_images">
+                        <label for="delete_existing_images">{% trans "Delete existing images" %}</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.is_active.id_for_label }}">{% trans "Status" %}</label>
+                {{ form.is_active }}
+                {% if form.is_active.errors %}
+                <div class="error-message">{{ form.is_active.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">{% trans "Save Changes" %}</button>
+                <a href="{% url 'suppliers:dashboard' %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle category change to update attributes and tags
+    const categorySelect = document.querySelector('#{{ form.category.id_for_label }}');
+    const tagsSelect = document.querySelector('#{{ form.tags.id_for_label }}');
+    
+    categorySelect.addEventListener('change', function() {
+        const categoryId = this.value;
+        if (categoryId) {
+            // Update tags based on selected category
+            const categoryTags = {{ category_tags|safe }}[categoryId] || [];
+            tagsSelect.innerHTML = '';
+            categoryTags.forEach(tag => {
+                const option = new Option(tag.name, tag.id);
+                tagsSelect.add(option);
+            });
+        }
+    });
+});
+</script>
+{% endblock %}
+{% endblock %} 

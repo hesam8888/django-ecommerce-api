@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Addresses - Admin Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .search-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .search-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            align-items: end;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #495057;
+        }
+        
+        .form-group input {
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn-edit {
+            background: #28a745;
+            color: white;
+            padding: 8px 15px;
+            font-size: 12px;
+        }
+        
+        .btn-edit:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .stats {
+            background: #e3f2fd;
+            padding: 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .stats-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #1976d2;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            padding: 20px;
+        }
+        
+        .address-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        
+        .address-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .address-table td {
+            padding: 12px;
+            border-bottom: 1px solid #f1f3f4;
+            font-size: 14px;
+        }
+        
+        .address-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .address-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .email-cell {
+            font-weight: 600;
+            color: #1976d2;
+        }
+        
+        .name-cell {
+            font-weight: 500;
+        }
+        
+        .address-cell {
+            max-width: 200px;
+            word-wrap: break-word;
+        }
+        
+        .empty-address {
+            color: #999;
+            font-style: italic;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+            font-size: 1.1em;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            animation: modalSlideIn 0.3s ease;
+        }
+        
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f1f3f4;
+        }
+        
+        .modal-title {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        
+        .close:hover {
+            color: #000;
+        }
+        
+        .modal-form {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .modal-form .form-group {
+            display: grid;
+            gap: 5px;
+        }
+        
+        .modal-form input {
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .modal-form input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        /* Confirmation Dialog */
+        .confirm-dialog {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .confirm-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        
+        .confirm-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        
+        .confirm-message {
+            margin-bottom: 25px;
+            color: #666;
+            line-height: 1.5;
+        }
+        
+        .confirm-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        /* Messages */
+        .messages {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        
+        .messages .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .messages .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        @media (max-width: 768px) {
+            .search-form {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-content {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .address-table {
+                font-size: 12px;
+            }
+            
+            .address-table th,
+            .address-table td {
+                padding: 8px 6px;
+            }
+            
+            .modal-content {
+                margin: 10% auto;
+                width: 95%;
+                padding: 20px;
+            }
+        }
+        
+        .empty-editable {
+            border: 2px dashed #bbb !important;
+            background: #f6f8fa !important;
+            color: #bbb !important;
+            cursor: pointer;
+            min-width: 60px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📍 User Addresses</h1>
+            <p>Manage and view all customer address information</p>
+        </div>
+        
+        <!-- Messages -->
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="{{ message.tags }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div class="search-section">
+            <form method="GET" class="search-form">
+                <div class="form-group">
+                    <label for="email">Search by Email:</label>
+                    <input type="email" id="email" name="email" value="{{ search_email }}" placeholder="Enter email address...">
+                </div>
+                <div class="form-group">
+                    <label for="country">Search by Country:</label>
+                    <input type="text" id="country" name="country" value="{{ search_country }}" placeholder="Enter country...">
+                </div>
+                <div class="form-group">
+                    <label for="city">Search by City:</label>
+                    <input type="text" id="city" name="city" value="{{ search_city }}" placeholder="Enter city...">
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">🔍 Search</button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="stats">
+            <div class="stats-content">
+                <div class="stat-item">
+                    <div class="stat-number">{{ total_count }}</div>
+                    <div class="stat-label">Total Users</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{{ customers|length }}</div>
+                    <div class="stat-label">Showing Results</div>
+                </div>
+                <div class="actions">
+                    <a href="{% url 'accounts:admin_addresses' %}" class="btn btn-secondary">🔄 Clear Filters</a>
+                    <a href="{% url 'admin:accounts_customer_changelist' %}" class="btn btn-primary">⚙️ Full Admin</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            {% if customers %}
+                <table class="address-table">
+                    <thead>
+                        <tr>
+                            <th>👤 User</th>
+                            <th>📧 Email</th>
+                            <th>📱 Phone</th>
+                            <th>🏠 Street Address</th>
+                            <th>🏙️ City</th>
+                            <th>🗺️ State</th>
+                            <th>🌍 Country</th>
+                            <th>📮 Postal Code</th>
+                            <th>📍 Full Address</th>
+                            <th>✏️ Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for customer in customers %}
+                        <tr data-customer-id="{{ customer.id }}">
+                            <td class="name-cell">{{ customer.first_name }} {{ customer.last_name }}</td>
+                            <td class="email-cell">{{ customer.email }}</td>
+                            <td>{{ customer.phone_number|default:"N/A" }}</td>
+                            <td class="address-cell editable{% if not customer.street_address %} empty-editable{% endif %}" data-field="street_address">{{ customer.street_address|default_if_none:'' }}</td>
+                            <td class="editable{% if not customer.city %} empty-editable{% endif %}" data-field="city">{{ customer.city|default_if_none:'' }}</td>
+                            <td class="editable{% if not customer.state %} empty-editable{% endif %}" data-field="state">{{ customer.state|default_if_none:'' }}</td>
+                            <td class="editable{% if not customer.country %} empty-editable{% endif %}" data-field="country">{{ customer.country|default_if_none:'' }}</td>
+                            <td class="editable{% if not customer.postal_code %} empty-editable{% endif %}" data-field="postal_code">{{ customer.postal_code|default_if_none:'' }}</td>
+                            <td class="address-cell">{% if customer.get_full_address %}{{ customer.get_full_address }}{% else %}<span class="empty-address">No address information</span>{% endif %}</td>
+                            <td>
+                                <button class="btn btn-edit" onclick="showEditModal(
+                                    {{ customer.id }},
+                                    '{{ customer.email|escapejs }}',
+                                    '{{ customer.street_address|default_if_none:''|escapejs }}',
+                                    '{{ customer.city|default_if_none:''|escapejs }}',
+                                    '{{ customer.state|default_if_none:''|escapejs }}',
+                                    '{{ customer.country|default_if_none:''|escapejs }}',
+                                    '{{ customer.postal_code|default_if_none:''|escapejs }}'
+                                )">✏️ Edit</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="no-results">
+                    <h3>🔍 No users found</h3>
+                    <p>Try adjusting your search criteria or <a href="{% url 'accounts:admin_addresses' %}">clear all filters</a></p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">✏️ Edit Address</h2>
+                <span class="close" onclick="closeEditModal()">&times;</span>
+            </div>
+            <form method="POST" class="modal-form">
+                {% csrf_token %}
+                <input type="hidden" id="customer_id" name="customer_id">
+                <div class="form-group">
+                    <label for="edit_email">Email:</label>
+                    <input type="email" id="edit_email" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="edit_street_address">Street Address:</label>
+                    <input type="text" id="edit_street_address" name="street_address" placeholder="Enter street address">
+                </div>
+                <div class="form-group">
+                    <label for="edit_city">City:</label>
+                    <input type="text" id="edit_city" name="city" placeholder="Enter city">
+                </div>
+                <div class="form-group">
+                    <label for="edit_state">State/Province:</label>
+                    <input type="text" id="edit_state" name="state" placeholder="Enter state or province">
+                </div>
+                <div class="form-group">
+                    <label for="edit_country">Country:</label>
+                    <input type="text" id="edit_country" name="country" placeholder="Enter country">
+                </div>
+                <div class="form-group">
+                    <label for="edit_postal_code">Postal Code:</label>
+                    <input type="text" id="edit_postal_code" name="postal_code" placeholder="Enter postal code">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">❌ Cancel</button>
+                    <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirmation Dialog -->
+    <div id="confirmDialog" class="confirm-dialog">
+        <div class="confirm-content">
+            <h3 class="confirm-title">⚠️ Confirm Edit</h3>
+            <p class="confirm-message" id="confirmMessage">
+                Are you sure you want to edit the address for <strong id="confirmEmail"></strong>?
+            </p>
+            <div class="confirm-actions">
+                <button class="btn btn-secondary" onclick="closeConfirmDialog()">❌ Cancel</button>
+                <button class="btn btn-primary" onclick="proceedWithEdit()">✅ Yes, Edit Address</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentCustomerData = null;
+        let currentlyEditing = null;
+
+        function showEditModal(customerId, email, streetAddress, city, state, country, postalCode) {
+            currentCustomerData = {
+                id: customerId,
+                email: email,
+                streetAddress: streetAddress,
+                city: city,
+                state: state,
+                country: country,
+                postalCode: postalCode
+            };
+            
+            // Show confirmation dialog first
+            document.getElementById('confirmEmail').textContent = email;
+            document.getElementById('confirmDialog').style.display = 'block';
+        }
+
+        function closeConfirmDialog() {
+            document.getElementById('confirmDialog').style.display = 'none';
+            currentCustomerData = null;
+        }
+
+        function proceedWithEdit() {
+            if (!currentCustomerData) return;
+            closeConfirmDialog();
+            document.getElementById('customer_id').value = currentCustomerData.id;
+            document.getElementById('edit_email').value = currentCustomerData.email;
+            document.getElementById('edit_street_address').value = currentCustomerData.streetAddress;
+            document.getElementById('edit_city').value = currentCustomerData.city;
+            document.getElementById('edit_state').value = currentCustomerData.state;
+            document.getElementById('edit_country').value = currentCustomerData.country;
+            document.getElementById('edit_postal_code').value = currentCustomerData.postalCode;
+            // Ensure only email is readonly
+            document.getElementById('edit_street_address').readOnly = false;
+            document.getElementById('edit_city').readOnly = false;
+            document.getElementById('edit_state').readOnly = false;
+            document.getElementById('edit_country').readOnly = false;
+            document.getElementById('edit_postal_code').readOnly = false;
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+            currentCustomerData = null;
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const editModal = document.getElementById('editModal');
+            const confirmDialog = document.getElementById('confirmDialog');
+            
+            if (event.target === editModal) {
+                closeEditModal();
+            }
+            if (event.target === confirmDialog) {
+                closeConfirmDialog();
+            }
+        }
+
+        // Close modals with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeEditModal();
+                closeConfirmDialog();
+            }
+        });
+
+        // Inline editing for address fields
+        document.querySelectorAll('.editable').forEach(cell => {
+            cell.addEventListener('dblclick', function(e) {
+                if (currentlyEditing) return; // Only one at a time
+                currentlyEditing = cell;
+                const oldValue = cell.textContent.trim();
+                const field = cell.getAttribute('data-field');
+                const row = cell.closest('tr');
+                const customerId = row.getAttribute('data-customer-id');
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = oldValue;
+                input.style.width = '100%';
+                input.style.fontSize = '14px';
+                input.style.padding = '6px';
+                input.style.borderRadius = '5px';
+                input.style.border = '1.5px solid #667eea';
+                input.addEventListener('keydown', function(ev) {
+                    if (ev.key === 'Enter') {
+                        ev.preventDefault();
+                        saveInlineEdit(input, cell, customerId, field, oldValue);
+                    } else if (ev.key === 'Escape') {
+                        cancelInlineEdit(cell, oldValue);
+                    }
+                });
+                input.addEventListener('blur', function() {
+                    saveInlineEdit(input, cell, customerId, field, oldValue);
+                });
+                cell.textContent = '';
+                cell.appendChild(input);
+                input.focus();
+                input.select();
+            });
+        });
+
+        function saveInlineEdit(input, cell, customerId, field, oldValue) {
+            const newValue = input.value.trim();
+            if (newValue === oldValue) {
+                cancelInlineEdit(cell, oldValue);
+                return;
+            }
+            cell.innerHTML = '<span style="color:#888;">Saving...</span>';
+            fetch("{% url 'accounts:admin_address_update' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: `customer_id=${encodeURIComponent(customerId)}&field=${encodeURIComponent(field)}&value=${encodeURIComponent(newValue)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    cell.textContent = data.value;
+                } else {
+                    cell.innerHTML = `<span style='color:red;'>${data.error || 'Error'}</span>`;
+                    setTimeout(() => cell.textContent = oldValue, 1500);
+                }
+                currentlyEditing = null;
+            })
+            .catch(() => {
+                cell.innerHTML = `<span style='color:red;'>Network error</span>`;
+                setTimeout(() => cell.textContent = oldValue, 1500);
+                currentlyEditing = null;
+            });
+        }
+
+        function cancelInlineEdit(cell, oldValue) {
+            cell.textContent = oldValue;
+            currentlyEditing = null;
+        }
+    </script>
+</body>
+</html> 

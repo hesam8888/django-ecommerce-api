@@ -1,0 +1,75 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block content %}
+<div id="content-main">
+    <div class="module">
+        <h2>Send Supplier Invitation</h2>
+        
+        {% if messages %}
+        <ul class="messagelist">
+            {% for message in messages %}
+            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <fieldset class="module aligned">
+                <h3>Store Information</h3>
+                <div class="form-row">
+                    <label for="email">Email Address:</label>
+                    <input type="email" name="email" id="email" required>
+                    <div class="help">The email address of the supplier you want to invite</div>
+                </div>
+                
+                <div class="form-row">
+                    <label for="store_username">Store Username:</label>
+                    <input type="text" name="store_username" id="store_username" required>
+                    <div class="help">This will be the unique username for the supplier's store</div>
+                </div>
+                
+                <div class="form-row">
+                    <label for="store_name">Store/Brand Name:</label>
+                    <input type="text" name="store_name" id="store_name" required>
+                    <div class="help">The name of the store or brand</div>
+                </div>
+            </fieldset>
+            
+            <fieldset class="module aligned">
+                <h3>Owner Information</h3>
+                <div class="form-row">
+                    <label for="owner_first_name">Owner First Name:</label>
+                    <input type="text" name="owner_first_name" id="owner_first_name">
+                    <div class="help">First name of the store owner</div>
+                </div>
+                
+                <div class="form-row">
+                    <label for="owner_last_name">Owner Last Name:</label>
+                    <input type="text" name="owner_last_name" id="owner_last_name">
+                    <div class="help">Last name of the store owner</div>
+                </div>
+                
+                <div class="form-row">
+                    <label for="phone_number">Phone Number:</label>
+                    <input type="text" name="phone_number" id="phone_number">
+                    <div class="help">Contact phone number for the supplier</div>
+                </div>
+                
+                <div class="form-row">
+                    <label for="address">Address:</label>
+                    <textarea name="address" id="address" rows="3"></textarea>
+                    <div class="help">Physical address of the store</div>
+                </div>
+            </fieldset>
+            
+            <div class="submit-row">
+                <input type="submit" value="Send Invitation" class="default">
+                <a href="{% url 'admin:suppliers_supplierinvitation_changelist' %}" class="button cancel-link">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

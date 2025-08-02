@@ -1,0 +1,206 @@
+{% extends 'shop/base.html' %}
+{% load static %}
+
+{% block title %}لیست علاقه‌مندی{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">لیست علاقه‌مندی شما</h2>
+            
+            {% if wishlist_items %}
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <p class="text-muted">شما {{ total_items }} محصول در لیست علاقه‌مندی دارید</p>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    {% for item in wishlist_items %}
+                        <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                            <div class="card h-100 wishlist-item" data-product-id="{{ item.product.id }}">
+                                {% if item.product.images.all %}
+                                    {% for image in item.product.images.all %}
+                                        {% if image.is_primary %}
+                                            <img src="{{ image.image.url }}" class="card-img-top" alt="{{ item.product.name }}" style="height: 200px; object-fit: cover;">
+                                            {% break %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                        <i class="fas fa-image text-muted fa-3x"></i>
+                                    </div>
+                                {% endif %}
+                                
+                                <div class="card-body d-flex flex-column">
+                                    <h5 class="card-title">{{ item.product.name }}</h5>
+                                    <p class="card-text text-muted small">{{ item.product.category.name }}</p>
+                                    
+                                    {% if item.product.description %}
+                                        <p class="card-text">{{ item.product.description|truncatewords:15 }}</p>
+                                    {% endif %}
+                                    
+                                    <div class="mt-auto">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <span class="h5 text-primary mb-0">{{ item.product.get_formatted_toman_price }}</span>
+                                            {% if item.product.price_usd %}
+                                                <span class="text-muted small">{{ item.product.get_formatted_usd_price }}</span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-primary btn-sm flex-grow-1">
+                                                <i class="fas fa-shopping-cart"></i> افزودن به سبد
+                                            </button>
+                                            <button class="btn btn-outline-danger btn-sm remove-from-wishlist" 
+                                                    data-product-id="{{ item.product.id }}" 
+                                                    title="حذف از لیست علاقه‌مندی">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card-footer bg-transparent border-top-0">
+                                    <small class="text-muted">اضافه شده در {{ item.created_at|date:"Y/m/d" }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if wishlist_items.has_other_pages %}
+                    <nav aria-label="Wishlist pagination" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if wishlist_items.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ wishlist_items.previous_page_number }}">قبلی</a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for num in wishlist_items.paginator.page_range %}
+                                {% if wishlist_items.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if wishlist_items.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ wishlist_items.next_page_number }}">بعدی</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+                
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-heart fa-5x text-muted mb-4"></i>
+                    <h3 class="text-muted">لیست علاقه‌مندی شما خالی است</h3>
+                    <p class="text-muted mb-4">محصولات مورد علاقه خود را به لیست اضافه کنید</p>
+                    <a href="{% url 'shop:product_list_with_wishlist' %}" class="btn btn-primary">
+                        <i class="fas fa-shopping-bag"></i> مشاهده محصولات
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Toast for notifications -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="wishlist-toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i class="fas fa-heart text-danger me-2"></i>
+            <strong class="me-auto">لیست علاقه‌مندی</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body" id="toast-message">
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Remove from wishlist functionality
+    $('.remove-from-wishlist').on('click', function() {
+        const productId = $(this).data('product-id');
+        const button = $(this);
+        const card = $(this).closest('.wishlist-item');
+        
+        // Show loading state
+        button.prop('disabled', true);
+        button.html('<i class="fas fa-spinner fa-spin"></i>');
+        
+        // Send AJAX request
+        $.ajax({
+            url: '{% url "shop:remove_from_wishlist" %}',
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val(),
+                'Content-Type': 'application/json'
+            },
+            data: JSON.stringify({
+                'product_id': productId
+            }),
+            success: function(response) {
+                if (response.success) {
+                    // Remove the card with animation
+                    card.fadeOut(300, function() {
+                        $(this).remove();
+                        
+                        // Check if no items left
+                        if ($('.wishlist-item').length === 0) {
+                            location.reload(); // Reload to show empty state
+                        }
+                    });
+                    
+                    // Show success toast
+                    showToast(response.message, 'success');
+                } else {
+                    // Reset button state
+                    button.prop('disabled', false);
+                    button.html('<i class="fas fa-trash"></i>');
+                    showToast('خطا در حذف محصول', 'error');
+                }
+            },
+            error: function() {
+                // Reset button state
+                button.prop('disabled', false);
+                button.html('<i class="fas fa-trash"></i>');
+                showToast('خطا در ارتباط با سرور', 'error');
+            }
+        });
+    });
+    
+    // Function to show toast notifications
+    function showToast(message, type) {
+        const toast = $('#wishlist-toast');
+        const toastBody = $('#toast-message');
+        
+        toastBody.text(message);
+        
+        // Change toast color based on type
+        if (type === 'success') {
+            toast.removeClass('bg-danger').addClass('bg-success text-white');
+        } else {
+            toast.removeClass('bg-success').addClass('bg-danger text-white');
+        }
+        
+        // Show toast
+        const bsToast = new bootstrap.Toast(toast[0]);
+        bsToast.show();
+    }
+});
+</script>
+{% endblock %} 

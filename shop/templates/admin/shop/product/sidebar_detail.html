@@ -1,0 +1,54 @@
+{% load static %}
+
+<div class="sidebar-product-detail">
+    <h2>{{ product.name }}</h2>
+    <div class="price">{{ product.price }}</div>
+    
+    {% if images %}
+    <div class="image-slider">
+        <div class="slider-container">
+            {% for image in images %}
+            <div class="slide">
+                <img src="{{ image.image.url }}" alt="{{ product.name }}">
+            </div>
+            {% endfor %}
+        </div>
+        {% if images.count > 1 %}
+        <div class="slider-nav">
+            <button class="prev-slide">&lt;</button>
+            <button class="next-slide">&gt;</button>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="no-image">No images available</div>
+    {% endif %}
+    
+    <div class="basic-info">
+        <p><strong>Category:</strong> {{ product.category }}</p>
+        <p><strong>Supplier:</strong> {{ product.supplier|default:"N/A" }}</p>
+        <p><strong>Status:</strong> {% if product.is_active %}Active{% else %}Inactive{% endif %}</p>
+        <p><strong>SKU:</strong> {{ product.sku|default:"N/A" }}</p>
+        <p><strong>Created:</strong> {{ product.created_at }}</p>
+    </div>
+    
+    <div class="description">
+        <h4>Description</h4>
+        <p>{{ product.description|default:"No description available"|linebreaks }}</p>
+    </div>
+    
+    {% if attributes %}
+    <div class="attributes">
+        <h4>Attributes</h4>
+        <ul>
+            {% for attr in attributes %}
+            <li><strong>{{ attr.key }}:</strong> {{ attr.value }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    
+    <div class="sidebar-actions">
+        <a href="{% url 'admin:shop_product_change' product.id %}" class="button">Edit Product</a>
+    </div>
+</div> 

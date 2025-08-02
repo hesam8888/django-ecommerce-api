@@ -1,0 +1,27 @@
+{% extends "admin/index.html" %}
+{% load i18n %}
+
+{% block content %}
+{{ block.super }}
+
+<div class="module" style="margin-top: 20px;">
+    <table style="width: 100%;">
+        <caption>
+            <a href="#" class="section" title="{% trans 'Advanced Product Management' %}">
+                {% trans 'Advanced Product Management' %}
+            </a>
+        </caption>
+        <tbody>
+            <tr>
+                <th scope="row">
+                    <a href="{% url 'shop:admin_products_explorer' %}">
+                        {% trans 'Product Explorer' %}
+                    </a>
+                </th>
+                <td></td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %} 

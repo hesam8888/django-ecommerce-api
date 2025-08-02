@@ -1,0 +1,346 @@
+{% extends 'accounts/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - My Account{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    .product-card {
+        transition: transform 0.3s ease;
+        height: 100%;
+        position: relative;
+    }
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .product-image {
+        height: 200px;
+        object-fit: cover;
+    }
+    .category-section {
+        margin-bottom: 3rem;
+    }
+    .category-title {
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .price {
+        font-size: 1.25rem;
+        font-weight: bold;
+        color: #28a745;
+    }
+    .product-description {
+        height: 48px;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+    .wishlist-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 3rem;
+    }
+    .wishlist-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(255,255,255,0.9);
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        z-index: 10;
+    }
+    .wishlist-btn:hover {
+        background: white;
+        transform: scale(1.1);
+    }
+    .wishlist-btn.in-wishlist {
+        background: rgba(220, 53, 69, 0.9);
+        color: white;
+    }
+    .wishlist-btn.in-wishlist:hover {
+        background: #dc3545;
+    }
+    .wishlist-heart {
+        font-size: 1.2rem;
+    }
+    .stats-card {
+        background: rgba(255,255,255,0.1);
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+        backdrop-filter: blur(10px);
+    }
+    .stats-number {
+        font-size: 2rem;
+        font-weight: bold;
+    }
+    .wishlist-item-small {
+        height: 120px;
+    }
+    .wishlist-item-small img {
+        height: 80px;
+        width: 80px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Welcome Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="display-4">Welcome back, {{ user.get_full_name|default:user.email }}!</h1>
+            <p class="lead">Your personal shopping dashboard</p>
+        </div>
+    </div>
+
+    <!-- Wishlist Section -->
+    <div class="wishlist-section">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h2 class="mb-3"><i class="fas fa-heart me-2"></i>Your Wishlist</h2>
+                {% if wishlist_items %}
+                    <p class="mb-4">You have {{ wishlist_count }} product{{ wishlist_count|pluralize }} in your wishlist</p>
+                    <div class="row g-3">
+                        {% for item in wishlist_items %}
+                        <div class="col-md-4">
+                            <div class="card wishlist-item-small bg-white text-dark">
+                                <div class="card-body p-2">
+                                    <div class="d-flex align-items-center">
+                                        {% with first_image=item.product.images.first %}
+                                        {% if first_image %}
+                                        <img src="{{ first_image.image.url }}" alt="{{ item.product.name }}" class="me-3">
+                                        {% else %}
+                                        <div class="bg-light me-3 d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; border-radius: 8px;">
+                                            <i class="fas fa-image text-muted"></i>
+                                        </div>
+                                        {% endif %}
+                                        {% endwith %}
+                                        <div>
+                                            <h6 class="mb-1">{{ item.product.name|truncatechars:20 }}</h6>
+                                            <small class="text-muted">{{ item.product.category.name }}</small>
+                                            <div class="text-success fw-bold">{{ item.product.get_formatted_toman_price }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-4">
+                        <a href="{% url 'shop:wishlist' %}" class="btn btn-light btn-lg">
+                            <i class="fas fa-heart me-2"></i>View Full Wishlist
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="stats-card">
+                        <i class="fas fa-heart fa-3x mb-3"></i>
+                        <h4>Your wishlist is empty</h4>
+                        <p class="mb-3">Start adding products you love!</p>
+                        <a href="{% url 'shop:product_list_with_wishlist' %}" class="btn btn-light">
+                            <i class="fas fa-shopping-bag me-2"></i>Browse Products
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="col-lg-4">
+                <div class="stats-card">
+                    <div class="stats-number">{{ wishlist_count }}</div>
+                    <div>Products in Wishlist</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Featured Products -->
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="category-title"><i class="fas fa-star me-2"></i>Featured Products</h2>
+        </div>
+    </div>
+
+    {% if products %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 mb-5">
+        {% for product in products %}
+        <div class="col">
+            <div class="card product-card h-100" data-product-id="{{ product.id }}">
+                <!-- Wishlist Button -->
+                <button class="wishlist-btn {% if product.is_in_wishlist %}in-wishlist{% endif %}" 
+                        data-product-id="{{ product.id }}"
+                        data-in-wishlist="{% if product.is_in_wishlist %}true{% else %}false{% endif %}">
+                    <i class="fas fa-heart wishlist-heart"></i>
+                </button>
+                
+                {% with first_image=product.images.first %}
+                {% if first_image %}
+                <img src="{{ first_image.image.url }}" class="card-img-top product-image" alt="{{ product.name }}">
+                {% else %}
+                <div class="card-img-top product-image bg-light d-flex align-items-center justify-content-center">
+                    <i class="fas fa-image text-muted fa-3x"></i>
+                </div>
+                {% endif %}
+                {% endwith %}
+                
+                <div class="card-body">
+                    <h5 class="card-title">{{ product.name }}</h5>
+                    <p class="card-text text-muted small">{{ product.category.name }}</p>
+                    <p class="card-text product-description">{{ product.description }}</p>
+                    <p class="price">{{ product.get_formatted_toman_price }}</p>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary">
+                            <i class="fas fa-shopping-cart me-2"></i>Add to Cart
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="text-center">
+        <a href="{% url 'shop:product_list_with_wishlist' %}" class="btn btn-outline-primary btn-lg">
+            <i class="fas fa-eye me-2"></i>View All Products
+        </a>
+    </div>
+
+    {% else %}
+    <div class="alert alert-info text-center">
+        <i class="fas fa-box-open fa-3x mb-3"></i>
+        <h4>No products available at the moment.</h4>
+        <p>Check back later for new arrivals!</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Toast for notifications -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="wishlist-toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i class="fas fa-heart text-danger me-2"></i>
+            <strong class="me-auto">Wishlist</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body" id="toast-message">
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Get CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                     $('meta[name="csrf-token"]').attr('content');
+    
+    // Wishlist toggle functionality
+    $('.wishlist-btn').on('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const productId = $(this).data('product-id');
+        const button = $(this);
+        const heartIcon = button.find('.wishlist-heart');
+        const isInWishlist = button.data('in-wishlist');
+        
+        // Show loading state
+        heartIcon.removeClass('fa-heart').addClass('fa-spinner fa-spin');
+        button.prop('disabled', true);
+        
+        // Determine URL based on current state
+        const url = isInWishlist ? 
+            '{% url "shop:remove_from_wishlist" %}' : 
+            '{% url "shop:add_to_wishlist" %}';
+        
+        // Send AJAX request
+        $.ajax({
+            url: url,
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json'
+            },
+            data: JSON.stringify({
+                'product_id': productId
+            }),
+            success: function(response) {
+                if (response.success) {
+                    // Toggle wishlist state
+                    const newState = !isInWishlist;
+                    button.data('in-wishlist', newState);
+                    
+                    // Update button appearance
+                    if (newState) {
+                        button.addClass('in-wishlist');
+                    } else {
+                        button.removeClass('in-wishlist');
+                    }
+                    
+                    // Show success toast
+                    showToast(response.message, 'success');
+                    
+                    // Reload page after 1 second to update wishlist section
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showToast('خطا در انجام عملیات', 'error');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX Error:', error);
+                showToast('خطا در ارتباط با سرور', 'error');
+            },
+            complete: function() {
+                // Reset button state
+                heartIcon.removeClass('fa-spinner fa-spin').addClass('fa-heart');
+                button.prop('disabled', false);
+            }
+        });
+    });
+    
+    // Function to show toast notifications
+    function showToast(message, type) {
+        const toast = $('#wishlist-toast');
+        const toastBody = $('#toast-message');
+        
+        toastBody.text(message);
+        
+        // Change toast color based on type
+        if (type === 'success') {
+            toast.removeClass('bg-danger').addClass('bg-success text-white');
+        } else {
+            toast.removeClass('bg-success').addClass('bg-danger text-white');
+        }
+        
+        // Show toast
+        const bsToast = new bootstrap.Toast(toast[0]);
+        bsToast.show();
+    }
+    
+    // Add smooth scrolling to wishlist section
+    $('.scroll-to-wishlist').on('click', function(e) {
+        e.preventDefault();
+        $('html, body').animate({
+            scrollTop: $('.wishlist-section').offset().top - 100
+        }, 800);
+    });
+});
+</script>
+{% endblock %} 
