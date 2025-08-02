@@ -4,6 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from shop.views import delete_product_image, home
 from .admin import admin_site
+from . import views
 from accounts.views import EmailTokenObtainPairView, UserDetailView, CustomerUserDetailView, CustomTokenRefreshView
 from . import views
 
@@ -14,6 +15,7 @@ urlpatterns = [
     
     # Admin and other endpoints
     path('admin/', admin_site.urls),
+    path('health/', views.health_check, name='health_check'),  # Health check endpoint
     path('', home, name='home'),  # Root URL for home page
     path('accounts/', include('accounts.urls')),  # custom urls
     path('accounts/', include('django.contrib.auth.urls')),  # built-in views

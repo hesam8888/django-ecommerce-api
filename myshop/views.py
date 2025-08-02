@@ -1,6 +1,7 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.cache import never_cache
 from django.conf import settings
 import json
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -20,6 +21,15 @@ import certifi
 import base64
 
 User = get_user_model()
+
+@never_cache
+def health_check(request):
+    """Simple health check endpoint for Railway deployment."""
+    return JsonResponse({
+        'status': 'healthy',
+        'message': 'Django e-commerce API is running',
+        'timestamp': datetime.now().isoformat()
+    })
 
 GOOGLE_CLIENT_IDS = [
     '198960327448-p1d5feprlio39dk1rrac0ueju78qu4c4.apps.googleusercontent.com',  # iOS
