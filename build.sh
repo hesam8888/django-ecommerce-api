@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build script for Render deployment
+# Build script for deployment
 
 echo "Building Django application..."
 

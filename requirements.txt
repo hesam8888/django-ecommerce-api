@@ -43,6 +43,7 @@ django-two-factor-auth==1.17.0
 djangorestframework==3.16.0
 djangorestframework-simplejwt==5.3.1
 funcy==2.0
+gunicorn==21.2.0
 gprof2dot==2025.4.14
 humanize==4.12.3
 idna==3.10
